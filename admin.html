@@ -1,0 +1,1521 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no,maximum-scale=1" />
+  <title>Exotix Trade Admin Panel</title>
+  <link rel="icon" href="https://cdn-icons-png.flaticon.com/512/6897/6897436.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    :root{
+      --primary-gradient: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+      --secondary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      --success-gradient: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+      --warning-gradient: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+      --danger-gradient: linear-gradient(135deg, #ff416c 0%, #ff4b2b 100%);
+      --dark-bg: linear-gradient(135deg, #0c0c0c 0%, #1a1a1a 50%, #2d2d2d 100%);
+      --card-bg: rgba(255,255,255,0.05);
+      --card-border: rgba(255,255,255,0.1);
+      --text-primary: #ffffff; 
+      --text-secondary: #a0a0a0;
+      --accent-blue: #3b82f6;
+      --accent-green: #10b981;
+      --accent-yellow: #f59e0b;
+      --accent-red: #ef4444;
+      --shadow-md: 0 4px 16px rgba(0,0,0,0.3); 
+      --shadow-lg: 0 8px 32px rgba(0,0,0,0.4);
+    }
+    html,body{width:100%;height:100%;font-family:'Inter',system-ui,Segoe UI,sans-serif;background:var(--dark-bg);color:var(--text-primary);overflow-x:hidden}
+    #app{display:block;min-height:100vh;padding-bottom:80px;background:var(--dark-bg);background-attachment:fixed}
+    #main-content{width:100%;max-width:1200px;margin:0 auto;padding:0 16px}
+
+    /* Header */
+    .admin-header{background:var(--card-bg);backdrop-filter:blur(20px);border-radius:16px;padding:16px;border:1px solid var(--card-border);box-shadow:var(--shadow-md);margin-bottom:20px;text-align:center}
+    .admin-title{font-size:28px;font-weight:800;background:var(--success-gradient);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+    .admin-subtitle{font-size:14px;color:var(--text-secondary);margin-top:8px}
+
+    /* Stats Grid */
+    .stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;margin-bottom:20px}
+    .stat-card{background:var(--card-bg);border:1px solid var(--card-border);border-radius:16px;padding:20px;text-align:center}
+    .stat-icon{width:48px;height:48px;border-radius:12px;background:var(--primary-gradient);display:flex;align-items:center;justify-content:center;margin:0 auto 12px}
+    .stat-icon img{width:24px;height:24px}
+    .stat-label{font-size:12px;color:var(--text-secondary);font-weight:700;text-transform:uppercase;margin-bottom:8px}
+    .stat-value{font-size:24px;font-weight:800;color:var(--accent-green)}
+
+    /* Cards */
+    .card{background:var(--card-bg);backdrop-filter:blur(20px);border-radius:16px;padding:20px;border:1px solid var(--card-border);box-shadow:var(--shadow-md);margin-bottom:20px}
+    .card-title{font-size:18px;font-weight:800;margin-bottom:16px;color:var(--accent-blue)}
+
+    /* Buttons */
+    .btn-primary,.btn-success,.btn-danger,.btn-warning{padding:10px 16px;border:none;border-radius:8px;font-size:14px;font-weight:700;color:#fff;cursor:pointer;transition:.2s;margin:4px}
+    .btn-primary{background:var(--primary-gradient)}
+    .btn-success{background:var(--success-gradient)}
+    .btn-danger{background:var(--danger-gradient)}
+    .btn-warning{background:var(--warning-gradient)}
+
+    /* Forms */
+    .form-group{margin-bottom:16px}
+    .form-label{font-size:12px;color:var(--text-secondary);font-weight:700;margin-bottom:6px;display:block}
+    .form-input{width:100%;padding:10px;border-radius:8px;border:1px solid var(--card-border);background:rgba(255,255,255,.06);color:#fff;outline:none}
+    .form-select{width:100%;padding:10px;border-radius:8px;border:1px solid var(--card-border);background:rgba(255,255,255,.06);color:#fff;outline:none}
+
+    /* Tables */
+    .table{width:100%;border-collapse:collapse;margin-top:16px}
+    .table th,.table td{padding:12px;text-align:left;border-bottom:1px solid var(--card-border)}
+    .table th{background:rgba(255,255,255,.05);font-weight:700;font-size:12px;text-transform:uppercase;color:var(--text-secondary)}
+    .table td{font-size:14px}
+    .table-container{overflow-x:auto}
+
+    /* Status badges */
+    .status-badge{padding:4px 8px;border-radius:6px;font-size:11px;font-weight:700;text-transform:uppercase}
+    .status-pending{background:rgba(245,158,11,.2);color:#f59e0b}
+    .status-approved{background:rgba(16,185,129,.2);color:#10b981}
+    .status-rejected{background:rgba(239,68,68,.2);color:#ef4444}
+
+    /* Search */
+    .search-box{width:100%;padding:12px;border-radius:8px;border:1px solid var(--card-border);background:rgba(255,255,255,.06);color:#fff;outline:none;margin-bottom:16px}
+
+    /* Grid Layout */
+    .grid-2{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+    .grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:20px}
+
+    /* Notification */
+    .notification{position:fixed;top:16px;right:16px;background:var(--success-gradient);color:#fff;padding:12px 20px;border-radius:12px;font-size:13px;font-weight:800;box-shadow:0 8px 24px rgba(0,0,0,.3);z-index:10000}
+
+    /* Nav */
+    .nav-bar{position:fixed;bottom:0;left:0;width:100%;background:rgba(12,12,12,.95);backdrop-filter:blur(20px);border-top:1px solid var(--card-border);display:flex;justify-content:space-around;padding:10px 0 8px;z-index:1000;box-shadow:0 -4px 16px rgba(0,0,0,.2)}
+    .nav-btn{flex:1;background:none;border:none;display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer;transition:.2s;padding:8px;border-radius:12px}
+    .nav-icon{width:30px;height:30px;border-radius:10px;filter:grayscale(100%) brightness(.7)}
+    .nav-label{font-size:11px;font-weight:700;color:var(--text-secondary)}
+    .nav-btn.active .nav-icon{filter:grayscale(0%) brightness(1);box-shadow:0 4px 12px rgba(59,130,246,.4)}
+    .nav-btn.active .nav-label{color:var(--accent-blue)}
+
+    /* Transaction Details Modal */
+    .modal{display:none;position:fixed;z-index:1000;left:0;top:0;width:100%;height:100%;background-color:rgba(0,0,0,0.5)}
+    .modal-content{background-color:var(--card-bg);margin:10% auto;padding:20px;border:1px solid var(--card-border);border-radius:16px;width:80%;max-width:500px}
+    .close{color:var(--text-secondary);float:right;font-size:28px;font-weight:bold;cursor:pointer}
+    .close:hover{color:var(--text-primary)}
+
+    /* Redeem Code Styles */
+    .redeem-code-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px;
+      border: 1px solid var(--card-border);
+      border-radius: 8px;
+      margin-bottom: 12px;
+    }
+    .redeem-code-info {
+      flex: 1;
+    }
+    .redeem-code-actions {
+      display: flex;
+      gap: 8px;
+    }
+    .redeem-code-text {
+      font-family: monospace;
+      font-size: 14px;
+      font-weight: bold;
+      color: var(--accent-blue);
+    }
+    .redeem-code-stats {
+      font-size: 12px;
+      color: var(--text-secondary);
+      margin-top: 4px;
+    }
+    .copy-btn {
+      background: var(--secondary-gradient);
+      color: white;
+      border: none;
+      padding: 6px 12px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: bold;
+    }
+    .copy-btn:hover {
+      opacity: 0.8;
+    }
+
+    @media(max-width:768px){
+      .grid-2,.grid-3{grid-template-columns:1fr}
+      .stats-grid{grid-template-columns:repeat(2,1fr)}
+    }
+  </style>
+</head>
+<body>
+  <!-- App -->
+  <div id="app">
+    <div class="admin-header">
+      <div class="admin-title">Exotix Trade Admin Panel</div>
+      <div class="admin-subtitle">Professional Trading Platform Management</div>
+    </div>
+    <div id="main-content"></div>
+
+    <!-- Navigation Bar -->
+    <div class="nav-bar">
+      <button class="nav-btn active" data-tab="dashboard">
+        <img src="https://cdn-icons-png.flaticon.com/512/2593/2593458.png" alt="Dashboard" class="nav-icon" />
+        <span class="nav-label">Dashboard</span>
+      </button>
+      <button class="nav-btn" data-tab="users">
+        <img src="https://cdn-icons-png.flaticon.com/512/1144/1144760.png" alt="Users" class="nav-icon" />
+        <span class="nav-label">Users</span>
+      </button>
+      <button class="nav-btn" data-tab="deposits">
+        <img src="https://cdn-icons-png.flaticon.com/512/4141/4141738.png" alt="Deposits" class="nav-icon" />
+        <span class="nav-label">Deposits</span>
+      </button>
+      <button class="nav-btn" data-tab="withdrawals">
+        <img src="https://cdn-icons-png.flaticon.com/512/2991/2991233.png" alt="Withdrawals" class="nav-icon" />
+        <span class="nav-label">Withdrawals</span>
+      </button>
+      <button class="nav-btn" data-tab="tasks">
+        <img src="https://cdn-icons-png.flaticon.com/512/2991/2991238.png" alt="Tasks" class="nav-icon" />
+        <span class="nav-label">Tasks</span>
+      </button>
+      <button class="nav-btn" data-tab="settings">
+        <img src="https://cdn-icons-png.flaticon.com/512/1827/1827422.png" alt="Settings" class="nav-icon" />
+        <span class="nav-label">Settings</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Transaction Details Modal -->
+  <div id="transactionModal" class="modal">
+    <div class="modal-content">
+      <span class="close">&times;</span>
+      <h2 style="color:var(--accent-blue);margin-bottom:16px">Transaction Details</h2>
+      <div id="modalContent"></div>
+    </div>
+  </div>
+
+  <script type="module">
+    // Firebase v9 Modular
+    import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+    import {
+      getDatabase, ref, get, set, update, onValue, off, push, query, orderByChild, equalTo, runTransaction, remove
+    } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
+
+    // Config
+    const firebaseConfig = {
+      apiKey: "AIzaSyBfR97veh6idxb81mH6N5_Gq8-CpW2D7bE",
+      authDomain: "jbhigfi.firebaseapp.com",
+      databaseURL: "https://jbhigfi-default-rtdb.firebaseio.com",
+      projectId: "jbhigfi",
+      storageBucket: "jbhigfi.firebasestorage.app",
+      messagingSenderId: "736760492095",
+      appId: "1:736760492095:web:47b94412495e21c561c88a",
+      measurementId: "G-ZZMHC9RTVT"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const rtdb = getDatabase(app);
+
+    // Bot
+    const BOT_TOKEN = '8332448822:AAHKhDvougBhBThL6aBl3hGjZbKFGAq7BUs';
+    const sendBot = async (msg, userId) => {
+      try {
+        await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ chat_id: userId, text: msg, parse_mode: 'HTML' })
+        });
+      } catch (e) { console.warn('Bot send failed', e); }
+    };
+
+    // State
+    let adminData = {
+      totalUsers: 0,
+      totalDeposits: 0,
+      totalWithdrawals: 0,
+      activeUsers: 0,
+      totalAds: 0,
+      totalTasks: 0,
+      pendingDeposits: 0,
+      pendingWithdrawals: 0
+    };
+
+    // Data arrays
+    let deposits = [];
+    let withdrawals = [];
+    let users = [];
+    let redeemCodes = [];
+
+    // Utils
+    const fmt = (n) => Number(n || 0).toFixed(6);
+    const fmtUSD = (n) => '$' + Number(n || 0).toFixed(2);
+    const notify = (m, d=3000) => { 
+      const n=document.createElement('div'); 
+      n.className='notification'; 
+      n.textContent=m; 
+      document.body.appendChild(n); 
+      setTimeout(()=>n.remove(), d); 
+    };
+
+    // Tabs
+    function showTab(tab){
+      document.querySelectorAll('.nav-btn').forEach(b=>b.classList.toggle('active', b.dataset.tab===tab));
+      if(tab==='dashboard') renderDashboard();
+      if(tab==='users') renderUsers();
+      if(tab==='deposits') renderDeposits();
+      if(tab==='withdrawals') renderWithdrawals();
+      if(tab==='tasks') renderTasks();
+      if(tab==='settings') renderSettings();
+    }
+
+    // Load data function
+    function loadData() {
+      // Load users
+      onValue(ref(rtdb, 'users'), (snapshot) => {
+        if (snapshot.exists()) {
+          users = Object.entries(snapshot.val()).map(([key, value]) => ({
+            id: key,
+            ...value
+          }));
+          adminData.totalUsers = users.length;
+          adminData.activeUsers = users.filter(u => (Date.now()/1000 - u.createdAt) < 86400).length;
+          
+          // Update dashboard if active
+          if (document.querySelector('.nav-btn.active').dataset.tab === 'dashboard') {
+            document.getElementById('totalUsers').textContent = adminData.totalUsers;
+            document.getElementById('activeUsers').textContent = adminData.activeUsers;
+          }
+        }
+      });
+
+      // Load deposits with real-time listener
+      onValue(ref(rtdb, 'admin/deposits'), (snapshot) => {
+        if (snapshot.exists()) {
+          deposits = Object.entries(snapshot.val()).map(([key, value]) => ({
+            id: key,
+            ...value
+          }));
+          
+          adminData.totalDeposits = deposits.filter(d => d.status === 'approved').reduce((sum, d) => sum + (d.amount || 0), 0);
+          adminData.pendingDeposits = deposits.filter(d => d.status === 'pending').length;
+          
+          // Update dashboard if active
+          if (document.querySelector('.nav-btn.active').dataset.tab === 'dashboard') {
+            document.getElementById('totalDeposits').textContent = fmtUSD(adminData.totalDeposits);
+            document.getElementById('pendingDeposits').textContent = adminData.pendingDeposits;
+            
+            // Update recent deposits
+            const recent = deposits.slice(-5).reverse();
+            document.getElementById('recentDeposits').innerHTML = recent.map(d => `
+              <div style="display:flex;justify-content:space-between;padding:8px;border-bottom:1px solid var(--card-border)">
+                <div>
+                  <div style="font-weight:700">${d.userName}</div>
+                  <div style="font-size:12px;color:var(--text-secondary)">${fmtUSD(d.amount)}</div>
+                </div>
+                <div>
+                  <span class="status-badge status-${d.status}">${d.status}</span>
+                  <div style="font-size:11px;color:var(--text-secondary)">${new Date(d.timestamp*1000).toLocaleDateString()}</div>
+                </div>
+              </div>
+            `).join('');
+          }
+          
+          // Update deposits tab if active
+          if (document.querySelector('.nav-btn.active').dataset.tab === 'deposits') {
+            renderDeposits();
+          }
+        }
+      });
+
+      // Load withdrawals with real-time listener
+      onValue(ref(rtdb, 'admin/withdrawals'), (snapshot) => {
+        if (snapshot.exists()) {
+          withdrawals = Object.entries(snapshot.val()).map(([key, value]) => ({
+            id: key,
+            ...value
+          }));
+          
+          adminData.totalWithdrawals = withdrawals.filter(w => w.status === 'approved').reduce((sum, w) => sum + (w.amount || 0), 0);
+          adminData.pendingWithdrawals = withdrawals.filter(w => w.status === 'pending').length;
+          
+          // Update dashboard if active
+          if (document.querySelector('.nav-btn.active').dataset.tab === 'dashboard') {
+            document.getElementById('totalWithdrawals').textContent = fmtUSD(adminData.totalWithdrawals);
+            document.getElementById('pendingWithdrawals').textContent = adminData.pendingWithdrawals;
+            
+            // Update recent withdrawals
+            const recent = withdrawals.slice(-5).reverse();
+            document.getElementById('recentWithdrawals').innerHTML = recent.map(w => `
+              <div style="display:flex;justify-content:space-between;padding:8px;border-bottom:1px solid var(--card-border)">
+                <div>
+                  <div style="font-weight:700">${w.userName}</div>
+                  <div style="font-size:12px;color:var(--text-secondary)">${fmtUSD(w.amount)}</div>
+                </div>
+                <div>
+                  <span class="status-badge status-${w.status}">${w.status}</span>
+                  <div style="font-size:11px;color:var(--text-secondary)">${new Date(w.timestamp*1000).toLocaleDateString()}</div>
+                </div>
+              </div>
+            `).join('');
+          }
+          
+          // Update withdrawals tab if active
+          if (document.querySelector('.nav-btn.active').dataset.tab === 'withdrawals') {
+            renderWithdrawals();
+          }
+        }
+      });
+
+      // Load tasks
+      onValue(ref(rtdb, 'tasks'), (snapshot) => {
+        if (snapshot.exists()) {
+          adminData.totalTasks = Object.keys(snapshot.val()).length;
+          if (document.querySelector('.nav-btn.active').dataset.tab === 'dashboard') {
+            document.getElementById('totalTasks').textContent = adminData.totalTasks;
+          }
+        }
+      });
+
+      // Load ads
+      onValue(ref(rtdb, 'users'), (snapshot) => {
+        if (snapshot.exists()) {
+          const usersData = snapshot.val();
+          let totalAds = 0;
+          Object.values(usersData).forEach(user => {
+            totalAds += user.adStats?.lifetime || 0;
+          });
+          adminData.totalAds = totalAds;
+          if (document.querySelector('.nav-btn.active').dataset.tab === 'dashboard') {
+            document.getElementById('totalAds').textContent = adminData.totalAds;
+          }
+        }
+      });
+
+      // Load redeem codes
+      onValue(ref(rtdb, 'redeemCodes'), (snapshot) => {
+        if (snapshot.exists()) {
+          redeemCodes = Object.entries(snapshot.val()).map(([key, value]) => ({
+            id: key,
+            ...value
+          }));
+        }
+      });
+    }
+
+    // Dashboard
+    function renderDashboard(){
+      const html = `
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-icon">
+              <img src="https://cdn-icons-png.flaticon.com/512/1144/1144760.png" alt="Users" />
+            </div>
+            <div class="stat-label">Total Users</div>
+            <div class="stat-value" id="totalUsers">${adminData.totalUsers}</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon">
+              <img src="https://cdn-icons-png.flaticon.com/512/4141/4141738.png" alt="Deposits" />
+            </div>
+            <div class="stat-label">Total Deposits</div>
+            <div class="stat-value" id="totalDeposits">${fmtUSD(adminData.totalDeposits)}</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon">
+              <img src="https://cdn-icons-png.flaticon.com/512/2991/2991233.png" alt="Withdrawals" />
+            </div>
+            <div class="stat-label">Total Withdrawals</div>
+            <div class="stat-value" id="totalWithdrawals">${fmtUSD(adminData.totalWithdrawals)}</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon">
+              <img src="https://cdn-icons-png.flaticon.com/512/2593/2593458.png" alt="Active Users" />
+            </div>
+            <div class="stat-label">Active Users</div>
+            <div class="stat-value" id="activeUsers">${adminData.activeUsers}</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon">
+              <img src="https://cdn-icons-png.flaticon.com/512/2991/2991238.png" alt="Ads" />
+            </div>
+            <div class="stat-label">Total Ads</div>
+            <div class="stat-value" id="totalAds">${adminData.totalAds}</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon">
+              <img src="https://cdn-icons-png.flaticon.com/512/2991/2991238.png" alt="Tasks" />
+            </div>
+            <div class="stat-label">Total Tasks</div>
+            <div class="stat-value" id="totalTasks">${adminData.totalTasks}</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon">
+              <img src="https://cdn-icons-png.flaticon.com/512/4141/4141738.png" alt="Pending Deposits" />
+            </div>
+            <div class="stat-label">Pending Deposits</div>
+            <div class="stat-value" id="pendingDeposits">${adminData.pendingDeposits}</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon">
+              <img src="https://cdn-icons-png.flaticon.com/512/2991/2991233.png" alt="Pending Withdrawals" />
+            </div>
+            <div class="stat-label">Pending Withdrawals</div>
+            <div class="stat-value" id="pendingWithdrawals">${adminData.pendingWithdrawals}</div>
+          </div>
+        </div>
+
+        <div class="grid-2">
+          <div class="card">
+            <div class="card-title">Recent Deposits</div>
+            <div id="recentDeposits">Loading...</div>
+          </div>
+          <div class="card">
+            <div class="card-title">Recent Withdrawals</div>
+            <div id="recentWithdrawals">Loading...</div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">User Activity Chart</div>
+          <canvas id="activityChart" height="300"></canvas>
+        </div>
+
+        <div class="card">
+          <div class="card-title">Transaction Volume Chart</div>
+          <canvas id="volumeChart" height="300"></canvas>
+        </div>
+      `;
+      document.getElementById('main-content').innerHTML = html;
+      
+      // Charts will be initialized after a delay to ensure DOM is ready
+      setTimeout(() => {
+        // Activity Chart
+        const ctx = document.getElementById('activityChart').getContext('2d');
+        new Chart(ctx, {
+          type: 'line',
+          data: {
+            labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+            datasets: [{
+              label: 'Active Users',
+              data: [12, 19, 3, 5, 2, 3, 7],
+              borderColor: '#3b82f6',
+              backgroundColor: 'rgba(59, 130, 246, 0.1)',
+              tension: 0.4
+            }]
+          },
+          options: {
+            responsive: true,
+            plugins: {
+              legend: { display: false }
+            },
+            scales: {
+              x: { grid: { color: 'rgba(255,255,255,0.1)' }, ticks: { color: 'rgba(255,255,255,0.7)' } },
+              y: { grid: { color: 'rgba(255,255,255,0.1)' }, ticks: { color: 'rgba(255,255,255,0.7)' } }
+            }
+          }
+        });
+
+        // Volume Chart
+        const ctx2 = document.getElementById('volumeChart').getContext('2d');
+        new Chart(ctx2, {
+          type: 'bar',
+          data: {
+            labels: ['Deposits', 'Withdrawals'],
+            datasets: [{
+              label: 'Transaction Volume',
+              data: [adminData.totalDeposits, adminData.totalWithdrawals],
+              backgroundColor: ['rgba(16, 185, 129, 0.8)', 'rgba(239, 68, 68, 0.8)'],
+              borderWidth: 0,
+              borderRadius: 8
+            }]
+          },
+          options: {
+            responsive: true,
+            plugins: {
+              legend: { display: false }
+            },
+            scales: {
+              x: { grid: { color: 'rgba(255,255,255,0.1)' }, ticks: { color: 'rgba(255,255,255,0.7)' } },
+              y: { grid: { color: 'rgba(255,255,255,0.1)' }, ticks: { color: 'rgba(255,255,255,0.7)' } }
+            }
+          }
+        });
+      }, 100);
+    }
+
+    // Users
+    function renderUsers(){
+      const html = `
+        <div class="card">
+          <div class="card-title">User Management</div>
+          <input type="text" class="search-box" id="userSearch" placeholder="Search users by ID or name...">
+          <div class="table-container">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>Avatar</th>
+                  <th>Name</th>
+                  <th>ID</th>
+                  <th>Balance</th>
+                  <th>Referrals</th>
+                  <th>Commission</th>
+                  <th>Created</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="usersTableBody">
+              </tbody>
+            </table>
+          </div>
+        </div>
+      `;
+      document.getElementById('main-content').innerHTML = html;
+      loadUsers();
+
+      document.getElementById('userSearch').addEventListener('input', (e) => {
+        const query = e.target.value.toLowerCase();
+        filterUsers(query);
+      });
+    }
+
+    function loadUsers(){
+      const tbody = document.getElementById('usersTableBody');
+      tbody.innerHTML = '';
+      
+      users.forEach(user => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+          <td><img src="${user.avatar}" style="width:32px;height:32px;border-radius:50%;object-fit:cover"></td>
+          <td>${user.name}</td>
+          <td>${user.id}</td>
+          <td>${fmtUSD(user.usdtBalance || 0)}</td>
+          <td>${user.referrals || 0}</td>
+          <td>${fmtUSD(user.totalReferralCommission || 0)}</td>
+          <td>${new Date(user.createdAt * 1000).toLocaleDateString()}</td>
+          <td>
+            <button class="btn-primary" onclick="editUser('${user.id}')">Edit</button>
+            <button class="btn-warning" onclick="banUser('${user.id}')">Ban</button>
+            <button class="btn-success" onclick="viewUserDetails('${user.id}')">Details</button>
+          </td>
+        `;
+        tbody.appendChild(row);
+      });
+    }
+
+    function filterUsers(query){
+      const rows = document.querySelectorAll('#usersTableBody tr');
+      rows.forEach(row => {
+        const text = row.textContent.toLowerCase();
+        row.style.display = text.includes(query) ? '' : 'none';
+      });
+    }
+
+    // Deposits
+    function renderDeposits(){
+      const html = `
+        <div class="card">
+          <div class="card-title">Deposit Management</div>
+          <div class="form-group">
+            <label class="form-label">Filter by Status</label>
+            <select class="form-select" id="depositStatusFilter">
+              <option value="all">All</option>
+              <option value="pending">Pending</option>
+              <option value="approved">Approved</option>
+              <option value="rejected">Rejected</option>
+            </select>
+          </div>
+          <div class="table-container">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>User</th>
+                  <th>Amount</th>
+                  <th>TX Hash</th>
+                  <th>Status</th>
+                  <th>Date</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="depositsTableBody">
+              </tbody>
+            </table>
+          </div>
+        </div>
+      `;
+      document.getElementById('main-content').innerHTML = html;
+      loadDeposits();
+
+      document.getElementById('depositStatusFilter').addEventListener('change', (e) => {
+        filterDeposits(e.target.value);
+      });
+    }
+
+    function loadDeposits(){
+      const tbody = document.getElementById('depositsTableBody');
+      tbody.innerHTML = '';
+      
+      deposits.forEach(deposit => {
+        const row = document.createElement('tr');
+        row.dataset.status = deposit.status;
+        row.innerHTML = `
+          <td>${deposit.id}</td>
+          <td>
+            <div style="font-weight:700">${deposit.userName}</div>
+            <div style="font-size:11px;color:var(--text-secondary)">${deposit.userId}</div>
+          </td>
+          <td>${fmtUSD(deposit.amount)}</td>
+          <td style="font-family:monospace;font-size:11px">${deposit.txHash}</td>
+          <td><span class="status-badge status-${deposit.status}">${deposit.status}</span></td>
+          <td>${new Date(deposit.timestamp * 1000).toLocaleString()}</td>
+          <td>
+            ${deposit.status === 'pending' ? `
+              <button class="btn-success" onclick="approveDeposit('${deposit.id}', '${deposit.userId}', ${deposit.amount})">Approve</button>
+              <button class="btn-danger" onclick="rejectDeposit('${deposit.id}', '${deposit.userId}')">Reject</button>
+            ` : ''}
+            <button class="btn-primary" onclick="viewDepositDetails('${deposit.id}')">Details</button>
+          </td>
+        `;
+        tbody.appendChild(row);
+      });
+    }
+
+    function filterDeposits(status){
+      const rows = document.querySelectorAll('#depositsTableBody tr');
+      rows.forEach(row => {
+        if (status === 'all') {
+          row.style.display = '';
+        } else {
+          row.style.display = row.dataset.status === status ? '' : 'none';
+        }
+      });
+    }
+
+    // Withdrawals
+    function renderWithdrawals(){
+      const html = `
+        <div class="card">
+          <div class="card-title">Withdrawal Management</div>
+          <div class="form-group">
+            <label class="form-label">Filter by Status</label>
+            <select class="form-select" id="withdrawalStatusFilter">
+              <option value="all">All</option>
+              <option value="pending">Pending</option>
+              <option value="approved">Approved</option>
+              <option value="rejected">Rejected</option>
+            </select>
+          </div>
+          <div class="table-container">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>User</th>
+                  <th>Amount</th>
+                  <th>Address</th>
+                  <th>Status</th>
+                  <th>Date</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="withdrawalsTableBody">
+              </tbody>
+            </table>
+          </div>
+        </div>
+      `;
+      document.getElementById('main-content').innerHTML = html;
+      loadWithdrawals();
+
+      document.getElementById('withdrawalStatusFilter').addEventListener('change', (e) => {
+        filterWithdrawals(e.target.value);
+      });
+    }
+
+    function loadWithdrawals(){
+      const tbody = document.getElementById('withdrawalsTableBody');
+      tbody.innerHTML = '';
+      
+      withdrawals.forEach(withdrawal => {
+        const row = document.createElement('tr');
+        row.dataset.status = withdrawal.status;
+        row.innerHTML = `
+          <td>${withdrawal.id}</td>
+          <td>
+            <div style="font-weight:700">${withdrawal.userName}</div>
+            <div style="font-size:11px;color:var(--text-secondary)">${withdrawal.userId}</div>
+          </td>
+          <td>${fmtUSD(withdrawal.amount)}</td>
+          <td style="font-family:monospace;font-size:11px">${withdrawal.address}</td>
+          <td><span class="status-badge status-${withdrawal.status}">${withdrawal.status}</span></td>
+          <td>${new Date(withdrawal.timestamp * 1000).toLocaleString()}</td>
+          <td>
+            ${withdrawal.status === 'pending' ? `
+              <button class="btn-success" onclick="approveWithdrawal('${withdrawal.id}', '${withdrawal.userId}', ${withdrawal.amount})">Approve</button>
+              <button class="btn-danger" onclick="rejectWithdrawal('${withdrawal.id}', '${withdrawal.userId}', ${withdrawal.amount})">Reject</button>
+            ` : ''}
+            <button class="btn-primary" onclick="viewWithdrawalDetails('${withdrawal.id}')">Details</button>
+          </td>
+        `;
+        tbody.appendChild(row);
+      });
+    }
+
+    function filterWithdrawals(status){
+      const rows = document.querySelectorAll('#withdrawalsTableBody tr');
+      rows.forEach(row => {
+        if (status === 'all') {
+          row.style.display = '';
+        } else {
+          row.style.display = row.dataset.status === status ? '' : 'none';
+        }
+      });
+    }
+
+    // Tasks
+    function renderTasks(){
+      const html = `
+        <div class="grid-2">
+          <div class="card">
+            <div class="card-title">Add New Task</div>
+            <div class="form-group">
+              <label class="form-label">Task Name</label>
+              <input type="text" class="form-input" id="taskName" placeholder="Enter task name">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Category</label>
+              <select class="form-select" id="taskCategory">
+                <option value="Project">Project</option>
+                <option value="Partner">Partner</option>
+                <option value="Advertise">Advertise</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Reward Amount (USDT)</label>
+              <input type="number" step="0.01" class="form-input" id="taskAmount" placeholder="Enter reward amount">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Task Link</label>
+              <input type="url" class="form-input" id="taskLink" placeholder="Enter task URL">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Task Photo URL</label>
+              <input type="url" class="form-input" id="taskPhoto" placeholder="Enter photo URL">
+            </div>
+            <button class="btn-primary" onclick="addTask()">Add Task</button>
+          </div>
+          <div class="card">
+            <div class="card-title">Existing Tasks</div>
+            <div id="tasksList">Loading...</div>
+          </div>
+        </div>
+      `;
+      document.getElementById('main-content').innerHTML = html;
+      loadTasks();
+    }
+
+    function loadTasks(){
+      get(ref(rtdb,'tasks')).then(s=>{
+        if(s.exists()){
+          const tasks = s.val();
+          let html = '';
+          
+          Object.entries(tasks).forEach(([id, task]) => {
+            html += `
+              <div style="border:1px solid var(--card-border);border-radius:8px;padding:12px;margin-bottom:8px">
+                <div style="display:flex;justify-content:space-between;align-items:center">
+                  <div>
+                    <div style="font-weight:700">${task.name}</div>
+                    <div style="font-size:12px;color:var(--text-secondary)">${task.category} • ${fmtUSD(task.amount)} USDT</div>
+                  </div>
+                  <div>
+                    <button class="btn-primary" onclick="editTask('${id}')">Edit</button>
+                    <button class="btn-danger" onclick="deleteTask('${id}')">Delete</button>
+                  </div>
+                </div>
+              </div>
+            `;
+          });
+          
+          document.getElementById('tasksList').innerHTML = html || '<div style="text-align:center;color:var(--text-secondary)">No tasks found</div>';
+        }
+      });
+    }
+
+    // Settings
+    function renderSettings(){
+      const html = `
+        <div class="grid-2">
+          <div class="card">
+            <div class="card-title">Generate Redeem Code</div>
+            <div class="form-group">
+              <label class="form-label">Max Users</label>
+              <input type="number" class="form-input" id="redeemMaxUsers" placeholder="How many users can claim">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Total USDT Pool</label>
+              <input type="number" step="0.01" class="form-input" id="redeemPool" placeholder="Total USDT to distribute">
+            </div>
+            <button class="btn-primary" onclick="generateRedeemCode()">Generate Code</button>
+          </div>
+          <div class="card">
+            <div class="card-title">Existing Redeem Codes</div>
+            <div id="redeemCodesList">Loading...</div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">Milestone Settings</div>
+          <div class="form-group">
+            <label class="form-label">100 Ads Reward</label>
+            <input type="number" step="0.01" class="form-input" id="milestone100" placeholder="USDT amount">
+          </div>
+          <div class="form-group">
+            <label class="form-label">200 Ads Reward</label>
+            <input type="number" step="0.01" class="form-input" id="milestone200" placeholder="USDT amount">
+          </div>
+          <div class="form-group">
+            <label class="form-label">500 Ads Reward</label>
+            <input type="number" step="0.01" class="form-input" id="milestone500" placeholder="USDT amount">
+          </div>
+          <button class="btn-primary" onclick="updateMilestones()">Update Milestones</button>
+        </div>
+
+        <div class="card">
+          <div class="card-title">User Balance Management</div>
+          <div class="form-group">
+            <label class="form-label">User ID</label>
+            <input type="text" class="form-input" id="balanceUserId" placeholder="Enter user ID">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Amount</label>
+            <input type="number" step="0.01" class="form-input" id="balanceAmount" placeholder="Enter amount">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Action</label>
+            <select class="form-select" id="balanceAction">
+              <option value="add">Add Balance</option>
+              <option value="subtract">Subtract Balance</option>
+              <option value="set">Set Balance</option>
+            </select>
+          </div>
+          <button class="btn-primary" onclick="updateUserBalance()">Update Balance</button>
+        </div>
+
+        <div class="card">
+          <div class="card-title">Global Announcement</div>
+          <div class="form-group">
+            <label class="form-label">Message</label>
+            <textarea class="form-input" id="announcementMessage" rows="3" placeholder="Enter announcement message"></textarea>
+          </div>
+          <button class="btn-primary" onclick="sendAnnouncement()">Send Announcement</button>
+        </div>
+
+        <div class="card">
+          <div class="card-title">System Maintenance</div>
+          <button class="btn-warning" onclick="backupData()">Backup Data</button>
+          <button class="btn-danger" onclick="clearPendingTransactions()">Clear Pending Transactions</button>
+        </div>
+      `;
+      document.getElementById('main-content').innerHTML = html;
+      loadRedeemCodes();
+    }
+
+    function loadRedeemCodes() {
+      get(ref(rtdb,'redeemCodes')).then(s=>{
+        if(s.exists()){
+          const codes = s.val();
+          let html = '';
+          
+          Object.entries(codes).forEach(([code, data]) => {
+            const used = data.used || 0;
+            const maxUsers = data.maxUsers || 0;
+            const left = Math.max(0, maxUsers - used);
+            
+            html += `
+              <div class="redeem-code-item">
+                <div class="redeem-code-info">
+                  <div class="redeem-code-text">${code}</div>
+                  <div class="redeem-code-stats">
+                    Pool: ${fmtUSD(data.pool)} | Used: ${used}/${maxUsers} | Left: ${left}
+                  </div>
+                </div>
+                <div class="redeem-code-actions">
+                  <button class="copy-btn" onclick="copyToClipboard('${code}')">Copy</button>
+                  <button class="btn-danger" onclick="deleteRedeemCode('${code}')">Delete</button>
+                </div>
+              </div>
+            `;
+          });
+          
+          document.getElementById('redeemCodesList').innerHTML = html || '<div style="text-align:center;color:var(--text-secondary)">No redeem codes found</div>';
+        }
+      });
+    }
+
+    // Modal Functions
+    function openModal(content) {
+      document.getElementById('modalContent').innerHTML = content;
+      document.getElementById('transactionModal').style.display = 'block';
+    }
+
+    function closeModal() {
+      document.getElementById('transactionModal').style.display = 'none';
+    }
+
+    // Global Functions
+    window.editUser = function(userId){
+      get(ref(rtdb, `users/${userId}`)).then(s => {
+        if(s.exists()){
+          const user = s.val();
+          openModal(`
+            <div class="form-group">
+              <label class="form-label">Name</label>
+              <input type="text" class="form-input" id="editUserName" value="${user.name}">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Balance</label>
+              <input type="number" step="0.01" class="form-input" id="editUserBalance" value="${user.usdtBalance || 0}">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Referrals</label>
+              <input type="number" class="form-input" id="editUserReferrals" value="${user.referrals || 0}">
+            </div>
+            <button class="btn-primary" onclick="saveUserChanges('${userId}')">Save Changes</button>
+          `);
+        }
+      });
+    };
+
+    window.saveUserChanges = function(userId){
+      const name = document.getElementById('editUserName').value;
+      const balance = parseFloat(document.getElementById('editUserBalance').value);
+      const referrals = parseInt(document.getElementById('editUserReferrals').value);
+      
+      update(ref(rtdb, `users/${userId}`), { 
+        name, 
+        usdtBalance: balance, 
+        referrals 
+      }).then(() => {
+        notify('User updated successfully');
+        closeModal();
+        renderUsers();
+      });
+    };
+
+    window.banUser = function(userId){
+      if(confirm('Are you sure you want to ban this user?')){
+        update(ref(rtdb, `users/${userId}`), { banned: true })
+          .then(() => {
+            notify('User banned');
+            renderUsers();
+          });
+      }
+    };
+
+    window.viewUserDetails = function(userId){
+      get(ref(rtdb, `users/${userId}`)).then(s => {
+        if(s.exists()){
+          const user = s.val();
+          openModal(`
+            <div style="text-align:center;margin-bottom:16px">
+              <img src="${user.avatar}" style="width:80px;height:80px;border-radius:50%;object-fit:cover">
+              <h3>${user.name}</h3>
+              <p>ID: ${userId}</p>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Balance</label>
+              <div style="font-size:18px;font-weight:700">${fmtUSD(user.usdtBalance || 0)} USDT</div>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Referrals</label>
+              <div style="font-size:18px;font-weight:700">${user.referrals || 0}</div>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Total Commission</label>
+              <div style="font-size:18px;font-weight:700">${fmtUSD(user.totalReferralCommission || 0)} USDT</div>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Active Plans</label>
+              <div>${Object.keys(user.activeTrades || {}).length} plans</div>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Total Ads Watched</label>
+              <div>${user.adStats?.lifetime || 0} ads</div>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Member Since</label>
+              <div>${new Date(user.createdAt * 1000).toLocaleDateString()}</div>
+            </div>
+          `);
+        }
+      });
+    };
+
+    window.approveDeposit = function(depositId, userId, amount){
+      // Update deposit status in admin panel
+      update(ref(rtdb, `admin/deposits/${depositId}`), { status: 'approved' })
+        .then(() => {
+          // Get user data
+          get(ref(rtdb, `users/${userId}`)).then(s => {
+            if(s.exists()){
+              const user = s.val();
+              const newBalance = (user.usdtBalance || 0) + amount;
+              
+              // Update user balance
+              update(ref(rtdb, `users/${userId}`), { usdtBalance: newBalance })
+                .then(() => {
+                  // Update user's deposit history
+                  if (user.depositHistory && user.depositHistory.length > 0) {
+                    const updatedHistory = user.depositHistory.map(d => 
+                      d.id === depositId ? { ...d, status: 'approved', balanceUpdated: true } : d
+                    );
+                    update(ref(rtdb, `users/${userId}`), { depositHistory: updatedHistory });
+                  }
+                  
+                  // Send notification to user
+                  sendBot(`✅ <b>Deposit Approved</b>\nAmount: ${fmtUSD(amount)}\nStatus: Approved\nBalance: ${fmtUSD(newBalance)}`, userId);
+                  notify('Deposit approved and user notified');
+                });
+            }
+          });
+        });
+    };
+
+    window.rejectDeposit = function(depositId, userId){
+      // Get reason for rejection
+      const reason = prompt('Please enter a reason for rejection (optional):');
+      
+      // Update deposit status in admin panel
+      update(ref(rtdb, `admin/deposits/${depositId}`), { 
+        status: 'rejected',
+        reason: reason || 'Not specified'
+      })
+        .then(() => {
+          // Get user data
+          get(ref(rtdb, `users/${userId}`)).then(s => {
+            if(s.exists()){
+              const user = s.val();
+              
+              // Update user's deposit history
+              if (user.depositHistory && user.depositHistory.length > 0) {
+                const updatedHistory = user.depositHistory.map(d => 
+                  d.id === depositId ? { ...d, status: 'rejected', reason: reason || 'Not specified' } : d
+                );
+                update(ref(rtdb, `users/${userId}`), { depositHistory: updatedHistory });
+              }
+              
+              // Send notification to user
+              sendBot(`❌ <b>Deposit Rejected</b>\nAmount: ${fmtUSD(deposits.find(d => d.id === depositId).amount)}\nReason: ${reason || 'Not specified'}\nPlease contact support if you have any questions.`, userId);
+              notify('Deposit rejected and user notified');
+            }
+          });
+        });
+    };
+
+    window.viewDepositDetails = function(depositId){
+      get(ref(rtdb, `admin/deposits/${depositId}`)).then(s => {
+        if(s.exists()){
+          const deposit = s.val();
+          openModal(`
+            <div class="form-group">
+              <label class="form-label">Transaction ID</label>
+              <div>${deposit.id}</div>
+            </div>
+            <div class="form-group">
+              <label class="form-label">User</label>
+              <div>${deposit.userName} (${deposit.userId})</div>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Amount</label>
+              <div>${fmtUSD(deposit.amount)} USDT</div>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Transaction Hash</label>
+              <div style="font-family:monospace;font-size:12px">${deposit.txHash}</div>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Memo</label>
+              <div>${deposit.memo}</div>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Status</label>
+              <div><span class="status-badge status-${deposit.status}">${deposit.status}</span></div>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Date</label>
+              <div>${new Date(deposit.timestamp * 1000).toLocaleString()}</div>
+            </div>
+            ${deposit.reason ? `
+            <div class="form-group">
+              <label class="form-label">Reason</label>
+              <div>${deposit.reason}</div>
+            </div>
+            ` : ''}
+          `);
+        }
+      });
+    };
+
+    window.approveWithdrawal = function(withdrawalId, userId, amount){
+      // Update withdrawal status in admin panel
+      update(ref(rtdb, `admin/withdrawals/${withdrawalId}`), { status: 'approved' })
+        .then(() => {
+          // Get user data
+          get(ref(rtdb, `users/${userId}`)).then(s => {
+            if(s.exists()){
+              const user = s.val();
+              const newBalance = Math.max(0, (user.usdtBalance || 0) - amount);
+              
+              // Update user balance
+              update(ref(rtdb, `users/${userId}`), { usdtBalance: newBalance })
+                .then(() => {
+                  // Update user's withdrawal history
+                  if (user.withdrawHistory && user.withdrawHistory.length > 0) {
+                    const updatedHistory = user.withdrawHistory.map(w => 
+                      w.id === withdrawalId ? { ...w, status: 'approved', balanceUpdated: true } : w
+                    );
+                    update(ref(rtdb, `users/${userId}`), { withdrawHistory: updatedHistory });
+                  }
+                  
+                  // Send notification to user
+                  sendBot(`✅ <b>Withdrawal Approved</b>\nAmount: ${fmtUSD(amount)}\nStatus: Approved\nBalance: ${fmtUSD(newBalance)}`, userId);
+                  notify('Withdrawal approved and user notified');
+                });
+            }
+          });
+        });
+    };
+
+    window.rejectWithdrawal = function(withdrawalId, userId, amount){
+      // Get reason for rejection
+      const reason = prompt('Please enter a reason for rejection (optional):');
+      
+      // Update withdrawal status in admin panel
+      update(ref(rtdb, `admin/withdrawals/${withdrawalId}`), { 
+        status: 'rejected',
+        reason: reason || 'Not specified'
+      })
+        .then(() => {
+          // Get user data
+          get(ref(rtdb, `users/${userId}`)).then(s => {
+            if(s.exists()){
+              const user = s.val();
+              
+              // Update user's withdrawal history
+              if (user.withdrawHistory && user.withdrawHistory.length > 0) {
+                const updatedHistory = user.withdrawHistory.map(w => 
+                  w.id === withdrawalId ? { ...w, status: 'rejected', reason: reason || 'Not specified', balanceUpdated: true } : w
+                );
+                update(ref(rtdb, `users/${userId}`), { withdrawHistory: updatedHistory });
+              }
+              
+              // Send notification to user
+              sendBot(`❌ <b>Withdrawal Rejected</b>\nAmount: ${fmtUSD(amount)}\nReason: ${reason || 'Not specified'}\nAmount refunded to your balance. Please contact support if you have any questions.`, userId);
+              notify('Withdrawal rejected and user notified');
+            }
+          });
+        });
+    };
+
+    window.viewWithdrawalDetails = function(withdrawalId){
+      get(ref(rtdb, `admin/withdrawals/${withdrawalId}`)).then(s => {
+        if(s.exists()){
+          const withdrawal = s.val();
+          openModal(`
+            <div class="form-group">
+              <label class="form-label">Transaction ID</label>
+              <div>${withdrawal.id}</div>
+            </div>
+            <div class="form-group">
+              <label class="form-label">User</label>
+              <div>${withdrawal.userName} (${withdrawal.userId})</div>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Amount</label>
+              <div>${fmtUSD(withdrawal.amount)} USDT</div>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Address</label>
+              <div style="font-family:monospace;font-size:12px">${withdrawal.address}</div>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Memo</label>
+              <div>${withdrawal.memo || 'N/A'}</div>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Status</label>
+              <div><span class="status-badge status-${withdrawal.status}">${withdrawal.status}</span></div>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Date</label>
+              <div>${new Date(withdrawal.timestamp * 1000).toLocaleString()}</div>
+            </div>
+            ${withdrawal.reason ? `
+            <div class="form-group">
+              <label class="form-label">Reason</label>
+              <div>${withdrawal.reason}</div>
+            </div>
+            ` : ''}
+          `);
+        }
+      });
+    };
+
+    window.addTask = function(){
+      const name = document.getElementById('taskName').value;
+      const category = document.getElementById('taskCategory').value;
+      const amount = parseFloat(document.getElementById('taskAmount').value);
+      const link = document.getElementById('taskLink').value;
+      const photo = document.getElementById('taskPhoto').value;
+
+      if(!name || !amount || !link || !photo){
+        notify('Please fill all fields');
+        return;
+      }
+
+      const taskId = 'task_' + Date.now();
+      set(ref(rtdb, `tasks/${taskId}`), {
+        name, category, amount, link, photo, createdAt: Date.now()/1000
+      }).then(() => {
+        notify('Task added successfully');
+        document.getElementById('taskName').value = '';
+        document.getElementById('taskAmount').value = '';
+        document.getElementById('taskLink').value = '';
+        document.getElementById('taskPhoto').value = '';
+        loadTasks();
+      });
+    };
+
+    window.editTask = function(taskId){
+      get(ref(rtdb, `tasks/${taskId}`)).then(s => {
+        if(s.exists()){
+          const task = s.val();
+          openModal(`
+            <div class="form-group">
+              <label class="form-label">Task Name</label>
+              <input type="text" class="form-input" id="editTaskName" value="${task.name}">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Category</label>
+              <select class="form-select" id="editTaskCategory">
+                <option value="Project" ${task.category === 'Project' ? 'selected' : ''}>Project</option>
+                <option value="Partner" ${task.category === 'Partner' ? 'selected' : ''}>Partner</option>
+                <option value="Advertise" ${task.category === 'Advertise' ? 'selected' : ''}>Advertise</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Reward Amount (USDT)</label>
+              <input type="number" step="0.01" class="form-input" id="editTaskAmount" value="${task.amount}">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Task Link</label>
+              <input type="url" class="form-input" id="editTaskLink" value="${task.link}">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Task Photo URL</label>
+              <input type="url" class="form-input" id="editTaskPhoto" value="${task.photo}">
+            </div>
+            <button class="btn-primary" onclick="saveTaskChanges('${taskId}')">Save Changes</button>
+          `);
+        }
+      });
+    };
+
+    window.saveTaskChanges = function(taskId){
+      const name = document.getElementById('editTaskName').value;
+      const category = document.getElementById('editTaskCategory').value;
+      const amount = parseFloat(document.getElementById('editTaskAmount').value);
+      const link = document.getElementById('editTaskLink').value;
+      const photo = document.getElementById('editTaskPhoto').value;
+
+      update(ref(rtdb, `tasks/${taskId}`), {
+        name, category, amount, link, photo
+      }).then(() => {
+        notify('Task updated successfully');
+        closeModal();
+        loadTasks();
+      });
+    };
+
+    window.deleteTask = function(taskId){
+      if(confirm('Are you sure you want to delete this task?')){
+        remove(ref(rtdb, `tasks/${taskId}`))
+          .then(() => {
+            notify('Task deleted');
+            loadTasks();
+          });
+      }
+    };
+
+    window.generateRedeemCode = function(){
+      const maxUsers = parseInt(document.getElementById('redeemMaxUsers').value);
+      const pool = parseFloat(document.getElementById('redeemPool').value);
+
+      if(!maxUsers || !pool){
+        notify('Please fill all fields');
+        return;
+      }
+
+      const code = Math.random().toString(36).substring(2, 10).toUpperCase();
+      set(ref(rtdb, `redeemCodes/${code}`), {
+        maxUsers, pool, used: 0, createdAt: Date.now()/1000
+      }).then(() => {
+        notify(`Redeem code generated: ${code}`);
+        document.getElementById('redeemMaxUsers').value = '';
+        document.getElementById('redeemPool').value = '';
+        loadRedeemCodes();
+      });
+    };
+
+    window.copyToClipboard = function(text) {
+      navigator.clipboard.writeText(text).then(() => {
+        notify('Code copied to clipboard');
+      }).catch(err => {
+        console.error('Failed to copy: ', err);
+        notify('Failed to copy code');
+      });
+    };
+
+    window.deleteRedeemCode = function(code) {
+      if(confirm('Are you sure you want to delete this redeem code?')){
+        remove(ref(rtdb, `redeemCodes/${code}`))
+          .then(() => {
+            notify('Redeem code deleted');
+            loadRedeemCodes();
+          });
+      }
+    };
+
+    window.updateMilestones = function(){
+      const m100 = parseFloat(document.getElementById('milestone100').value);
+      const m200 = parseFloat(document.getElementById('milestone200').value);
+      const m500 = parseFloat(document.getElementById('milestone500').value);
+
+      if(!m100 || !m200 || !m500){
+        notify('Please fill all fields');
+        return;
+      }
+
+      set(ref(rtdb, 'milestoneSettings'), { milestone100: m100, milestone200: m200, milestone500: m500 })
+        .then(() => {
+          notify('Milestone settings updated');
+        });
+    };
+
+    window.updateUserBalance = function(){
+      const userId = document.getElementById('balanceUserId').value;
+      const amount = parseFloat(document.getElementById('balanceAmount').value);
+      const action = document.getElementById('balanceAction').value;
+
+      if(!userId || !amount){
+        notify('Please fill all fields');
+        return;
+      }
+
+      get(ref(rtdb, `users/${userId}`)).then(s => {
+        if(s.exists()){
+          const user = s.val();
+          let newBalance = user.usdtBalance || 0;
+          
+          switch(action){
+            case 'add': newBalance += amount; break;
+            case 'subtract': newBalance = Math.max(0, newBalance - amount); break;
+            case 'set': newBalance = amount; break;
+          }
+
+          update(ref(rtdb, `users/${userId}`), { usdtBalance: newBalance })
+            .then(() => {
+              sendBot(`💰 <b>Balance Updated</b>\nAction: ${action}\nAmount: ${fmtUSD(amount)}\nNew Balance: ${fmtUSD(newBalance)}`, userId);
+              notify('User balance updated');
+              document.getElementById('balanceUserId').value = '';
+              document.getElementById('balanceAmount').value = '';
+            });
+        } else {
+          notify('User not found');
+        }
+      });
+    };
+
+    window.sendAnnouncement = function(){
+      const message = document.getElementById('announcementMessage').value;
+      if(!message){
+        notify('Please enter a message');
+        return;
+      }
+
+      get(ref(rtdb,'users')).then(s => {
+        if(s.exists()){
+          const users = s.val();
+          Object.keys(users).forEach(userId => {
+            sendBot(`📢 <b>Announcement</b>\n\n${message}`, userId);
+          });
+          notify('Announcement sent to all users');
+          document.getElementById('announcementMessage').value = '';
+        }
+      });
+    };
+
+    window.backupData = function(){
+      if(confirm('This will create a backup of all user data. Continue?')){
+        const timestamp = Date.now();
+        set(ref(rtdb, `backups/backup_${timestamp}`), {
+          timestamp,
+          note: 'Manual backup created by admin'
+        }).then(() => {
+          notify('Backup created successfully');
+        });
+      }
+    };
+
+    window.clearPendingTransactions = function(){
+      if(confirm('This will clear all pending deposit and withdrawal requests. Continue?')){
+        get(ref(rtdb,'admin/deposits')).then(s => {
+          if(s.exists()){
+            const deposits = s.val();
+            Object.entries(deposits).forEach(([id, deposit]) => {
+              if(deposit.status === 'pending'){
+                update(ref(rtdb, `admin/deposits/${id}`), { status: 'expired' });
+              }
+            });
+          }
+        });
+
+        get(ref(rtdb,'admin/withdrawals')).then(s => {
+          if(s.exists()){
+            const withdrawals = s.val();
+            Object.entries(withdrawals).forEach(([id, withdrawal]) => {
+              if(withdrawal.status === 'pending'){
+                update(ref(rtdb, `admin/withdrawals/${id}`), { status: 'expired' });
+              }
+            });
+          }
+        });
+
+        notify('All pending transactions cleared');
+      }
+    };
+
+    // Modal close event
+    document.querySelector('.close').onclick = closeModal;
+    window.onclick = function(event) {
+      const modal = document.getElementById('transactionModal');
+      if (event.target === modal) {
+        closeModal();
+      }
+    };
+
+    // Nav events
+    document.querySelectorAll('.nav-btn').forEach(btn=>{
+      btn.addEventListener('click', ()=>showTab(btn.dataset.tab));
+    });
+
+    // Initialize
+    loadData();
+    showTab('dashboard');
+  </script>
+</body>
+</html>
