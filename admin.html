@@ -1,0 +1,2078 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no,maximum-scale=1" />
+  <title>Exotix Trade Admin Panel</title>
+  <link rel="icon" href="https://github.com/s42144/exotix-/blob/ce4cd9399ff673963389c393946138254a0edbe5/USDT-Ton-Wallet.png?raw=true" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+  
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  
+  <!-- Firebase v9 Modular -->
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+  
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    :root{
+      --primary-gradient: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+      --secondary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      --success-gradient: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+      --warning-gradient: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+      --danger-gradient: linear-gradient(135deg, #ff416c 0%, #ff4b2b 100%);
+      --dark-bg: linear-gradient(135deg, #0c0c0c 0%, #1a1a1a 50%, #2d2d2d 100%);
+      --card-bg: rgba(255,255,255,0.05);
+      --card-border: rgba(255,255,255,0.1);
+      --text-primary: #ffffff; 
+      --text-secondary: #a0a0a0;
+      --accent-blue: #3b82f6;
+      --accent-green: #10b981;
+      --accent-yellow: #f59e0b;
+      --accent-red: #ef4444;
+      --shadow-md: 0 4px 16px rgba(0,0,0,0.3); 
+      --shadow-lg: 0 8px 32px rgba(0,0,0,0.4);
+    }
+    html,body{width:100%;height:100%;font-family:'Inter',system-ui,Segoe UI,sans-serif;background:var(--dark-bg);color:var(--text-primary);overflow-x:hidden}
+    #app{display:none;min-height:100vh;background:var(--dark-bg);background-attachment:fixed}
+    #header{background:var(--card-bg);backdrop-filter:blur(20px);border-bottom:1px solid var(--card-border);padding:16px 20px;display:flex;align-items:center;justify-content:space-between}
+    #header-title{font-size:20px;font-weight:800;background:var(--success-gradient);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+    #header-user{display:flex;align-items:center;gap:12px}
+    #header-avatar{width:40px;height:40px;border-radius:50%;border:2px solid var(--accent-blue)}
+    #header-name{font-weight:700}
+    #container{display:flex;min-height:calc(100vh - 73px)}
+    #sidebar{width:250px;background:var(--card-bg);backdrop-filter:blur(20px);border-right:1px solid var(--card-border);padding:20px 0}
+    .sidebar-item{padding:12px 20px;display:flex;align-items:center;gap:12px;cursor:pointer;transition:.2s;color:var(--text-secondary)}
+    .sidebar-item:hover{background:rgba(255,255,255,0.05);color:var(--text-primary)}
+    .sidebar-item.active{background:rgba(59,130,246,0.1);color:var(--accent-blue);border-left:3px solid var(--accent-blue)}
+    .sidebar-icon{width:20px;height:20px}
+    #main-content{flex:1;padding:20px;overflow-y:auto}
+    .section-header{margin-bottom:20px}
+    .section-title{font-size:24px;font-weight:800;margin-bottom:8px}
+    .section-subtitle{font-size:14px;color:var(--text-secondary)}
+    .card{background:var(--card-bg);backdrop-filter:blur(20px);border-radius:16px;padding:20px;border:1px solid var(--card-border);box-shadow:var(--shadow-md);margin-bottom:20px}
+    .stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;margin-bottom:20px}
+    .stat-card{background:var(--card-bg);border:1px solid var(--card-border);border-radius:12px;padding:16px}
+    .stat-title{font-size:12px;color:var(--text-secondary);margin-bottom:8px}
+    .stat-value{font-size:24px;font-weight:800}
+    .stat-change{font-size:12px;margin-top:4px}
+    .stat-change.positive{color:var(--accent-green)}
+    .stat-change.negative{color:var(--accent-red)}
+    .btn{padding:10px 16px;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;transition:.2s;display:inline-flex;align-items:center;gap:8px}
+    .btn-primary{background:var(--primary-gradient);color:#fff}
+    .btn-success{background:var(--success-gradient);color:#fff}
+    .btn-danger{background:var(--danger-gradient);color:#fff}
+    .btn-warning{background:var(--warning-gradient);color:#fff}
+    .btn:disabled{opacity:0.5;cursor:not-allowed}
+    .table{width:100%;border-collapse:collapse}
+    .table th,.table td{padding:12px;text-align:left;border-bottom:1px solid var(--card-border)}
+    .table th{font-weight:600;color:var(--text-secondary)}
+    .table tr:hover{background:rgba(255,255,255,0.02)}
+    .status-badge{padding:4px 8px;border-radius:4px;font-size:12px;font-weight:600;display:inline-block}
+    .status-pending{background:rgba(245,158,11,0.2);color:var(--accent-yellow)}
+    .status-approved{background:rgba(16,185,129,0.2);color:var(--accent-green)}
+    .status-rejected{background:rgba(239,68,68,0.2);color:var(--accent-red)}
+    .form-group{margin-bottom:16px}
+    .form-label{display:block;margin-bottom:6px;font-size:14px;font-weight:600}
+    .form-input{width:100%;padding:10px;border-radius:8px;border:1px solid var(--card-border);background:rgba(255,255,255,0.05);color:#fff;outline:none}
+    .form-input:focus{border-color:var(--accent-blue)}
+    .form-select{width:100%;padding:10px;border-radius:8px;border:1px solid var(--card-border);background:rgba(255,255,255,0.05);color:#fff;outline:none}
+    .modal{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.8);display:none;align-items:center;justify-content:center;z-index:1000}
+    .modal-content{background:var(--dark-bg);border-radius:16px;padding:24px;max-width:500px;width:90%;max-height:80vh;overflow-y:auto;border:1px solid var(--card-border)}
+    .modal-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px}
+    .modal-title{font-size:20px;font-weight:800}
+    .modal-close{width:32px;height:32px;border-radius:50%;background:rgba(255,255,255,0.1);border:none;color:var(--text-primary);font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center}
+    .modal-close:hover{background:rgba(255,255,255,0.2)}
+    .tabs{display:flex;margin-bottom:20px;border-bottom:1px solid var(--card-border)}
+    .tab{padding:12px 16px;font-weight:600;color:var(--text-secondary);cursor:pointer;position:relative}
+    .tab.active{color:var(--accent-blue)}
+    .tab.active::after{content:'';position:absolute;bottom:-1px;left:0;width:100%;height:2px;background:var(--accent-blue)}
+    .tab-content{display:none}
+    .tab-content.active{display:block}
+    .chart-container{height:300px;margin-bottom:20px}
+    .pagination{display:flex;justify-content:center;gap:8px;margin-top:20px}
+    .page-btn{padding:8px 12px;border-radius:6px;background:var(--card-bg);border:1px solid var(--card-border);color:var(--text-secondary);cursor:pointer}
+    .page-btn.active{background:var(--accent-blue);color:#fff;border-color:var(--accent-blue)}
+    .search-box{display:flex;gap:10px;margin-bottom:20px}
+    .search-input{flex:1;padding:10px;border-radius:8px;border:1px solid var(--card-border);background:rgba(255,255,255,0.05);color:#fff;outline:none}
+    .action-buttons{display:flex;gap:8px}
+    .action-btn{padding:6px 10px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer}
+    .view-btn{background:var(--accent-blue);color:#fff}
+    .edit-btn{background:var(--accent-yellow);color:#fff}
+    .ban-btn{background:var(--accent-red);color:#fff}
+    .approve-btn{background:var(--accent-green);color:#fff}
+    .reject-btn{background:var(--accent-red);color:#fff}
+    .toast{position:fixed;bottom:20px;right:20px;background:var(--card-bg);border-radius:8px;padding:16px;box-shadow:var(--shadow-lg);z-index:1000;max-width:300px}
+    .toast-success{border-left:4px solid var(--accent-green)}
+    .toast-error{border-left:4px solid var(--accent-red)}
+    .toast-info{border-left:4px solid var(--accent-blue)}
+    .empty-state{text-align:center;padding:40px;color:var(--text-secondary)}
+    .empty-state-icon{font-size:48px;margin-bottom:16px}
+    .empty-state-title{font-size:18px;font-weight:700;margin-bottom:8px}
+    .empty-state-text{font-size:14px}
+    .loading{text-align:center;padding:40px}
+    .spinner{width:40px;height:40px;border:4px solid rgba(255,255,255,0.1);border-top-color:var(--accent-blue);border-radius:50%;animation:spin 1s linear infinite;margin:0 auto 16px}
+    @keyframes spin{to{transform:rotate(360deg)}}
+    .user-details{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px}
+    .detail-item{background:rgba(255,255,255,0.05);border-radius:8px;padding:12px}
+    .detail-label{font-size:12px;color:var(--text-secondary);margin-bottom:4px}
+    .detail-value{font-size:14px;font-weight:600}
+    .task-form{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px}
+    .code-form{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px}
+    .announcement-form{display:flex;flex-direction:column;gap:16px}
+    .file-upload{border:2px dashed var(--card-border);border-radius:8px;padding:20px;text-align:center;cursor:pointer;transition:.2s}
+    .file-upload:hover{border-color:var(--accent-blue)}
+    .file-upload.dragover{border-color:var(--accent-blue);background:rgba(59,130,246,0.1)}
+    .file-preview{margin-top:16px}
+    .file-preview img{max-width:100%;max-height:200px;border-radius:8px}
+    .promo-form{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px}
+    .inline-buttons{display:flex;gap:8px;margin-top:16px}
+    .inline-button{padding:8px 16px;border-radius:6px;background:var(--card-bg);border:1px solid var(--card-border);color:var(--text-primary);cursor:pointer}
+    .inline-button-add{background:var(--accent-green);color:#fff;border-color:var(--accent-green)}
+    .inline-button-remove{background:var(--accent-red);color:#fff;border-color:var(--accent-red)}
+  </style>
+</head>
+<body>
+  <div id="app">
+    <header id="header">
+      <div id="header-title">Exotix Trade Admin Panel</div>
+      <div id="header-user">
+        <img id="header-avatar" src="https://cdn-icons-png.flaticon.com/512/1077/1077114.png" alt="Admin">
+        <div id="header-name">Admin</div>
+      </div>
+    </header>
+    
+    <div id="container">
+      <aside id="sidebar">
+        <div class="sidebar-item active" data-page="dashboard">
+          <span class="sidebar-icon">📊</span>
+          <span>Dashboard</span>
+        </div>
+        <div class="sidebar-item" data-page="users">
+          <span class="sidebar-icon">👥</span>
+          <span>Users</span>
+        </div>
+        <div class="sidebar-item" data-page="deposits">
+          <span class="sidebar-icon">💳</span>
+          <span>Deposits</span>
+        </div>
+        <div class="sidebar-item" data-page="withdrawals">
+          <span class="sidebar-icon">💸</span>
+          <span>Withdrawals</span>
+        </div>
+        <div class="sidebar-item" data-page="tasks">
+          <span class="sidebar-icon">📋</span>
+          <span>Tasks</span>
+        </div>
+        <div class="sidebar-item" data-page="redeem-codes">
+          <span class="sidebar-icon">🎫</span>
+          <span>Redeem Codes</span>
+        </div>
+        <div class="sidebar-item" data-page="promo-codes">
+          <span class="sidebar-icon">🏷️</span>
+          <span>Promo Codes</span>
+        </div>
+        <div class="sidebar-item" data-page="milestones">
+          <span class="sidebar-icon">🏆</span>
+          <span>Milestones</span>
+        </div>
+        <div class="sidebar-item" data-page="announcements">
+          <span class="sidebar-icon">📢</span>
+          <span>Announcements</span>
+        </div>
+        <div class="sidebar-item" data-page="referrals">
+          <span class="sidebar-icon">🔗</span>
+          <span>Referrals</span>
+        </div>
+      </aside>
+      
+      <main id="main-content">
+        <!-- Content will be loaded here -->
+      </main>
+    </div>
+  </div>
+
+  <!-- User Details Modal -->
+  <div class="modal" id="userDetailsModal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <div class="modal-title">User Details</div>
+        <button class="modal-close" id="closeUserModal">×</button>
+      </div>
+      <div id="userDetailsContent">
+        <!-- User details will be loaded here -->
+      </div>
+    </div>
+  </div>
+
+  <!-- Edit User Modal -->
+  <div class="modal" id="editUserModal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <div class="modal-title">Edit User</div>
+        <button class="modal-close" id="closeEditUserModal">×</button>
+      </div>
+      <form id="editUserForm">
+        <div class="form-group">
+          <label class="form-label">User ID</label>
+          <input type="text" class="form-input" id="editUserId" readonly>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Name</label>
+          <input type="text" class="form-input" id="editUserName">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Balance (USDT)</label>
+          <input type="number" class="form-input" id="editUserBalance" step="0.000001">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Status</label>
+          <select class="form-select" id="editUserStatus">
+            <option value="active">Active</option>
+            <option value="banned">Banned</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <button type="button" class="btn btn-primary" id="saveUserChanges">Save Changes</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Task Modal -->
+  <div class="modal" id="taskModal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <div class="modal-title" id="taskModalTitle">Add Task</div>
+        <button class="modal-close" id="closeTaskModal">×</button>
+      </div>
+      <form id="taskForm" class="task-form">
+        <div class="form-group">
+          <label class="form-label">Task Name</label>
+          <input type="text" class="form-input" id="taskName" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Category</label>
+          <select class="form-select" id="taskCategory" required>
+            <option value="Project">Project</option>
+            <option value="Partner">Partner</option>
+            <option value="Advertise">Advertise</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Reward (USDT)</label>
+          <input type="number" class="form-input" id="taskReward" step="0.000001" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Link</label>
+          <input type="url" class="form-input" id="taskLink" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Photo URL</label>
+          <input type="url" class="form-input" id="taskPhoto">
+          <div class="file-upload" id="taskPhotoUpload">
+            <p>Or upload image</p>
+            <input type="file" id="taskPhotoFile" accept="image/*" style="display:none">
+          </div>
+          <div class="file-preview" id="taskPhotoPreview"></div>
+        </div>
+        <div class="form-group">
+          <button type="button" class="btn btn-primary" id="saveTask">Save Task</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Redeem Code Modal -->
+  <div class="modal" id="redeemCodeModal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <div class="modal-title" id="redeemCodeModalTitle">Generate Redeem Code</div>
+        <button class="modal-close" id="closeRedeemCodeModal">×</button>
+      </div>
+      <form id="redeemCodeForm" class="code-form">
+        <div class="form-group">
+          <label class="form-label">Total USDT Pool</label>
+          <input type="number" class="form-input" id="redeemCodePool" step="0.000001" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Max Users</label>
+          <input type="number" class="form-input" id="redeemCodeMaxUsers" required>
+        </div>
+        <div class="form-group">
+          <button type="button" class="btn btn-primary" id="generateRedeemCode">Generate Code</button>
+        </div>
+        <div class="form-group" id="redeemCodeResult" style="display:none">
+          <label class="form-label">Generated Code</label>
+          <div style="display:flex;gap:10px">
+            <input type="text" class="form-input" id="redeemCodeValue" readonly>
+            <button type="button" class="btn btn-primary" id="copyRedeemCode">Copy</button>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Promo Code Modal -->
+  <div class="modal" id="promoCodeModal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <div class="modal-title" id="promoCodeModalTitle">Generate Promo Code</div>
+        <button class="modal-close" id="closePromoCodeModal">×</button>
+      </div>
+      <form id="promoCodeForm" class="promo-form">
+        <div class="form-group">
+          <label class="form-label">Bonus Percentage (%)</label>
+          <input type="number" class="form-input" id="promoCodePercentage" min="1" max="100" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Max Users</label>
+          <input type="number" class="form-input" id="promoCodeMaxUsers" required>
+        </div>
+        <div class="form-group">
+          <button type="button" class="btn btn-primary" id="generatePromoCode">Generate Code</button>
+        </div>
+        <div class="form-group" id="promoCodeResult" style="display:none">
+          <label class="form-label">Generated Code</label>
+          <div style="display:flex;gap:10px">
+            <input type="text" class="form-input" id="promoCodeValue" readonly>
+            <button type="button" class="btn btn-primary" id="copyPromoCode">Copy</button>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Announcement Modal -->
+  <div class="modal" id="announcementModal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <div class="modal-title">Send Announcement</div>
+        <button class="modal-close" id="closeAnnouncementModal">×</button>
+      </div>
+      <form id="announcementForm" class="announcement-form">
+        <div class="form-group">
+          <label class="form-label">Message</label>
+          <textarea class="form-input" id="announcementMessage" rows="5" required></textarea>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Photo URL (optional)</label>
+          <input type="url" class="form-input" id="announcementPhoto">
+          <div class="file-upload" id="announcementPhotoUpload">
+            <p>Or upload image</p>
+            <input type="file" id="announcementPhotoFile" accept="image/*" style="display:none">
+          </div>
+          <div class="file-preview" id="announcementPhotoPreview"></div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Inline Buttons (optional)</label>
+          <div id="inlineButtons">
+            <div class="inline-button-row" style="display:flex;gap:8px;margin-bottom:8px">
+              <input type="text" class="form-input" placeholder="Button Text" data-inline="text">
+              <input type="url" class="form-input" placeholder="Button URL" data-inline="url">
+              <button type="button" class="btn btn-danger inline-button-remove">Remove</button>
+            </div>
+          </div>
+          <button type="button" class="btn btn-primary inline-button-add" id="addInlineButton">Add Button</button>
+        </div>
+        <div class="form-group">
+          <button type="button" class="btn btn-primary" id="sendAnnouncement">Send Announcement</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Toast Notification -->
+  <div class="toast" id="toast" style="display:none">
+    <div id="toastMessage"></div>
+  </div>
+
+  <script>
+    // Firebase Configuration
+    const firebaseConfig = {
+      apiKey: "AIzaSyBfR97veh6idxb81mH6N5_Gq8-CpW2D7bE",
+      authDomain: "jbhigfi.firebaseapp.com",
+      databaseURL: "https://jbhigfi-default-rtdb.firebaseio.com",
+      projectId: "jbhigfi",
+      storageBucket: "jbhigfi.firebasestorage.app",
+      messagingSenderId: "736760492095",
+      appId: "1:736760492095:web:47b94412495e21c561c88a",
+      measurementId: "G-ZZMHC9RTVT"
+    };
+
+    // Initialize Firebase
+    firebase.initializeApp(firebaseConfig);
+    const database = firebase.database();
+
+    // Bot Token
+    const BOT_TOKEN = '8332448822:AAHKhDvougBhBThL6aBl3hGjZbKFGAq7BUs';
+
+    // State
+    let currentPage = 'dashboard';
+    let users = [];
+    let deposits = [];
+    let withdrawals = [];
+    let tasks = {};
+    let redeemCodes = {};
+    let promoCodes = {};
+    let stats = {
+      totalUsers: 0,
+      dailyUsers: 0,
+      onlineUsers: 0,
+      totalAds: 0,
+      activeTasks: 0,
+      pendingDeposits: 0,
+      pendingWithdrawals: 0
+    };
+
+    // Utils
+    const now = () => Math.floor(Date.now()/1000);
+    const fmt = (n)=> Number(n||0).toFixed(6);
+    const showToast = (message, type = 'info') => {
+      const toast = document.getElementById('toast');
+      const toastMessage = document.getElementById('toastMessage');
+      
+      toast.className = 'toast toast-' + type;
+      toastMessage.textContent = message;
+      toast.style.display = 'block';
+      
+      setTimeout(() => {
+        toast.style.display = 'none';
+      }, 3000);
+    };
+    const copy = (text) => {
+      navigator.clipboard.writeText(text).then(() => {
+        showToast('Copied to clipboard', 'success');
+      });
+    };
+    const generateId = () => 'TXN' + Date.now() + Math.random().toString(36).substr(2, 5).toUpperCase();
+    const formatDateTime = (timestamp) => {
+      return new Date(timestamp * 1000).toLocaleString();
+    };
+    const formatCurrency = (amount) => {
+      return '$' + Number(amount).toFixed(2);
+    };
+
+    // API Functions
+    const sendBot = async (msg, chatId = null, inlineButtons = null) => {
+      try {
+        const targetChatId = chatId || '@exotix_admin'; // Admin channel
+        const payload = {
+          chat_id: targetChatId,
+          text: msg,
+          parse_mode: 'HTML'
+        };
+        
+        // Add inline keyboard if buttons are provided
+        if (inlineButtons && inlineButtons.length > 0) {
+          payload.reply_markup = {
+            inline_keyboard: [inlineButtons]
+          };
+        }
+        
+        await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
+          method: 'POST', 
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+      } catch (e) { 
+        console.warn('Bot send failed', e); 
+      }
+    };
+
+    // Data Loading Functions
+    const loadUsers = async () => {
+      const snapshot = await database.ref('users').once('value');
+      const data = snapshot.val() || {};
+      users = Object.entries(data).map(([id, user]) => ({
+        id,
+        ...user
+      }));
+      return users;
+    };
+
+    const loadDeposits = async () => {
+      const snapshot = await database.ref('admin/deposits').once('value');
+      const data = snapshot.val() || {};
+      deposits = Object.entries(data).map(([id, deposit]) => ({
+        id,
+        ...deposit
+      }));
+      return deposits;
+    };
+
+    const loadWithdrawals = async () => {
+      const snapshot = await database.ref('admin/withdrawals').once('value');
+      const data = snapshot.val() || {};
+      withdrawals = Object.entries(data).map(([id, withdrawal]) => ({
+        id,
+        ...withdrawal
+      }));
+      return withdrawals;
+    };
+
+    const loadTasks = async () => {
+      const snapshot = await database.ref('tasks').once('value');
+      tasks = snapshot.val() || {};
+      return tasks;
+    };
+
+    const loadRedeemCodes = async () => {
+      const snapshot = await database.ref('redeemCodes').once('value');
+      redeemCodes = snapshot.val() || {};
+      return redeemCodes;
+    };
+
+    const loadPromoCodes = async () => {
+      const snapshot = await database.ref('promoCodes').once('value');
+      promoCodes = snapshot.val() || {};
+      return promoCodes;
+    };
+
+    const calculateStats = async () => {
+      const users = await loadUsers();
+      const deposits = await loadDeposits();
+      const withdrawals = await loadWithdrawals();
+      const tasks = await loadTasks();
+      
+      const today = new Date().toISOString().split('T')[0];
+      const oneDayAgo = now() - 86400;
+      
+      stats.totalUsers = users.length;
+      stats.dailyUsers = users.filter(user => {
+        const lastActive = user.lastActive || 0;
+        return lastActive > oneDayAgo;
+      }).length;
+      stats.onlineUsers = users.filter(user => {
+        const lastActive = user.lastActive || 0;
+        return lastActive > (now() - 300); // Active in last 5 minutes
+      }).length;
+      
+      // Calculate total ads shown
+      stats.totalAds = users.reduce((total, user) => {
+        return total + (user.adStats?.lifetime || 0);
+      }, 0);
+      
+      stats.activeTasks = Object.keys(tasks).length;
+      stats.pendingDeposits = deposits.filter(deposit => deposit.status === 'pending').length;
+      stats.pendingWithdrawals = withdrawals.filter(withdrawal => withdrawal.status === 'pending').length;
+      
+      return stats;
+    };
+
+    // Page Rendering Functions
+    const renderDashboard = async () => {
+      await calculateStats();
+      
+      const html = `
+        <div class="section-header">
+          <div class="section-title">Dashboard</div>
+          <div class="section-subtitle">Overview of platform statistics</div>
+        </div>
+        
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-title">Total Users</div>
+            <div class="stat-value">${stats.totalUsers}</div>
+            <div class="stat-change positive">+${stats.dailyUsers} today</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-title">Online Users</div>
+            <div class="stat-value">${stats.onlineUsers}</div>
+            <div class="stat-change">Active now</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-title">Total Ads Shown</div>
+            <div class="stat-value">${stats.totalAds}</div>
+            <div class="stat-change">All time</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-title">Active Tasks</div>
+            <div class="stat-value">${stats.activeTasks}</div>
+            <div class="stat-change">Available</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-title">Pending Deposits</div>
+            <div class="stat-value">${stats.pendingDeposits}</div>
+            <div class="stat-change">Awaiting approval</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-title">Pending Withdrawals</div>
+            <div class="stat-value">${stats.pendingWithdrawals}</div>
+            <div class="stat-change">Awaiting approval</div>
+          </div>
+        </div>
+        
+        <div class="card">
+          <div class="section-title" style="margin-bottom:16px">User Activity Chart</div>
+          <div class="chart-container">
+            <canvas id="userActivityChart"></canvas>
+          </div>
+        </div>
+        
+        <div class="card">
+          <div class="section-title" style="margin-bottom:16px">Recent Deposits</div>
+          <table class="table">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>User</th>
+                <th>Amount</th>
+                <th>Status</th>
+                <th>Date</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${deposits.slice(0, 5).map(deposit => `
+                <tr>
+                  <td>${deposit.id}</td>
+                  <td>${deposit.userName}</td>
+                  <td>${formatCurrency(deposit.amount)}</td>
+                  <td><span class="status-badge status-${deposit.status}">${deposit.status}</span></td>
+                  <td>${formatDateTime(deposit.timestamp)}</td>
+                  <td>
+                    <div class="action-buttons">
+                      ${deposit.status === 'pending' ? `
+                        <button class="action-btn approve-btn" data-id="${deposit.id}" data-type="deposit">Approve</button>
+                        <button class="action-btn reject-btn" data-id="${deposit.id}" data-type="deposit">Reject</button>
+                      ` : ''}
+                    </div>
+                  </td>
+                </tr>
+              `).join('')}
+              ${deposits.length === 0 ? '<tr><td colspan="6" class="empty-state">No deposits yet</td></tr>' : ''}
+            </tbody>
+          </table>
+        </div>
+        
+        <div class="card">
+          <div class="section-title" style="margin-bottom:16px">Recent Withdrawals</div>
+          <table class="table">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>User</th>
+                <th>Amount</th>
+                <th>Status</th>
+                <th>Date</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${withdrawals.slice(0, 5).map(withdrawal => `
+                <tr>
+                  <td>${withdrawal.id}</td>
+                  <td>${withdrawal.userName}</td>
+                  <td>${formatCurrency(withdrawal.amount)}</td>
+                  <td><span class="status-badge status-${withdrawal.status}">${withdrawal.status}</span></td>
+                  <td>${formatDateTime(withdrawal.timestamp)}</td>
+                  <td>
+                    <div class="action-buttons">
+                      ${withdrawal.status === 'pending' ? `
+                        <button class="action-btn approve-btn" data-id="${withdrawal.id}" data-type="withdrawal">Approve</button>
+                        <button class="action-btn reject-btn" data-id="${withdrawal.id}" data-type="withdrawal">Reject</button>
+                      ` : ''}
+                    </div>
+                  </td>
+                </tr>
+              `).join('')}
+              ${withdrawals.length === 0 ? '<tr><td colspan="6" class="empty-state">No withdrawals yet</td></tr>' : ''}
+            </tbody>
+          </table>
+        </div>
+      `;
+      
+      document.getElementById('main-content').innerHTML = html;
+      
+      // Initialize chart
+      setTimeout(() => {
+        const ctx = document.getElementById('userActivityChart').getContext('2d');
+        new Chart(ctx, {
+          type: 'line',
+          data: {
+            labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+            datasets: [{
+              label: 'Daily Active Users',
+              data: [120, 150, 180, 200, 170, 230, 210],
+              backgroundColor: 'rgba(59, 130, 246, 0.2)',
+              borderColor: 'rgba(59, 130, 246, 1)',
+              borderWidth: 2,
+              tension: 0.4
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: {
+                display: false
+              }
+            },
+            scales: {
+              y: {
+                beginAtZero: true,
+                grid: {
+                  color: 'rgba(255, 255, 255, 0.1)'
+                },
+                ticks: {
+                  color: 'rgba(255, 255, 255, 0.7)'
+                }
+              },
+              x: {
+                grid: {
+                  display: false
+                },
+                ticks: {
+                  color: 'rgba(255, 255, 255, 0.7)'
+                }
+              }
+            }
+          }
+        });
+      }, 100);
+      
+      // Add event listeners for approve/reject buttons
+      document.querySelectorAll('.approve-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const id = btn.dataset.id;
+          const type = btn.dataset.type;
+          approveTransaction(id, type);
+        });
+      });
+      
+      document.querySelectorAll('.reject-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const id = btn.dataset.id;
+          const type = btn.dataset.type;
+          rejectTransaction(id, type);
+        });
+      });
+    };
+
+    const renderUsers = async () => {
+      await loadUsers();
+      
+      const html = `
+        <div class="section-header">
+          <div class="section-title">Users</div>
+          <div class="section-subtitle">Manage platform users</div>
+        </div>
+        
+        <div class="search-box">
+          <input type="text" class="search-input" id="userSearchInput" placeholder="Search by User ID">
+          <button class="btn btn-primary" id="userSearchBtn">Search</button>
+        </div>
+        
+        <div class="card">
+          <table class="table">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Name</th>
+                <th>Balance</th>
+                <th>Status</th>
+                <th>Joined</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${users.map(user => `
+                <tr>
+                  <td>${user.id}</td>
+                  <td>${user.name}</td>
+                  <td>${formatCurrency(user.usdtBalance || 0)}</td>
+                  <td><span class="status-badge status-${user.banned ? 'rejected' : 'approved'}">${user.banned ? 'Banned' : 'Active'}</span></td>
+                  <td>${formatDateTime(user.createdAt || now())}</td>
+                  <td>
+                    <div class="action-buttons">
+                      <button class="action-btn view-btn" data-id="${user.id}">View</button>
+                      <button class="action-btn edit-btn" data-id="${user.id}">Edit</button>
+                      <button class="action-btn ban-btn" data-id="${user.id}">${user.banned ? 'Unban' : 'Ban'}</button>
+                    </div>
+                  </td>
+                </tr>
+              `).join('')}
+              ${users.length === 0 ? '<tr><td colspan="6" class="empty-state">No users found</td></tr>' : ''}
+            </tbody>
+          </table>
+        </div>
+      `;
+      
+      document.getElementById('main-content').innerHTML = html;
+      
+      // Add event listeners
+      document.getElementById('userSearchBtn').addEventListener('click', () => {
+        const searchValue = document.getElementById('userSearchInput').value.trim();
+        if (searchValue) {
+          const filteredUsers = users.filter(user => user.id.includes(searchValue));
+          renderFilteredUsers(filteredUsers);
+        } else {
+          renderUsers();
+        }
+      });
+      
+      document.querySelectorAll('.view-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const userId = btn.dataset.id;
+          showUserDetails(userId);
+        });
+      });
+      
+      document.querySelectorAll('.edit-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const userId = btn.dataset.id;
+          showEditUserModal(userId);
+        });
+      });
+      
+      document.querySelectorAll('.ban-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const userId = btn.dataset.id;
+          toggleUserBan(userId);
+        });
+      });
+    };
+
+    const renderFilteredUsers = (filteredUsers) => {
+      const html = `
+        <div class="section-header">
+          <div class="section-title">Users</div>
+          <div class="section-subtitle">Manage platform users</div>
+        </div>
+        
+        <div class="search-box">
+          <input type="text" class="search-input" id="userSearchInput" placeholder="Search by User ID" value="${document.getElementById('userSearchInput').value}">
+          <button class="btn btn-primary" id="userSearchBtn">Search</button>
+        </div>
+        
+        <div class="card">
+          <table class="table">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Name</th>
+                <th>Balance</th>
+                <th>Status</th>
+                <th>Joined</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${filteredUsers.map(user => `
+                <tr>
+                  <td>${user.id}</td>
+                  <td>${user.name}</td>
+                  <td>${formatCurrency(user.usdtBalance || 0)}</td>
+                  <td><span class="status-badge status-${user.banned ? 'rejected' : 'approved'}">${user.banned ? 'Banned' : 'Active'}</span></td>
+                  <td>${formatDateTime(user.createdAt || now())}</td>
+                  <td>
+                    <div class="action-buttons">
+                      <button class="action-btn view-btn" data-id="${user.id}">View</button>
+                      <button class="action-btn edit-btn" data-id="${user.id}">Edit</button>
+                      <button class="action-btn ban-btn" data-id="${user.id}">${user.banned ? 'Unban' : 'Ban'}</button>
+                    </div>
+                  </td>
+                </tr>
+              `).join('')}
+              ${filteredUsers.length === 0 ? '<tr><td colspan="6" class="empty-state">No users found</td></tr>' : ''}
+            </tbody>
+          </table>
+        </div>
+      `;
+      
+      document.getElementById('main-content').innerHTML = html;
+      
+      // Re-add event listeners
+      document.getElementById('userSearchBtn').addEventListener('click', () => {
+        const searchValue = document.getElementById('userSearchInput').value.trim();
+        if (searchValue) {
+          const newFilteredUsers = users.filter(user => user.id.includes(searchValue));
+          renderFilteredUsers(newFilteredUsers);
+        } else {
+          renderUsers();
+        }
+      });
+      
+      document.querySelectorAll('.view-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const userId = btn.dataset.id;
+          showUserDetails(userId);
+        });
+      });
+      
+      document.querySelectorAll('.edit-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const userId = btn.dataset.id;
+          showEditUserModal(userId);
+        });
+      });
+      
+      document.querySelectorAll('.ban-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const userId = btn.dataset.id;
+          toggleUserBan(userId);
+        });
+      });
+    };
+
+    const renderDeposits = async () => {
+      await loadDeposits();
+      
+      const html = `
+        <div class="section-header">
+          <div class="section-title">Deposits</div>
+          <div class="section-subtitle">Manage user deposits</div>
+        </div>
+        
+        <div class="card">
+          <table class="table">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>User</th>
+                <th>Amount</th>
+                <th>Promo Code</th>
+                <th>Bonus</th>
+                <th>Total</th>
+                <th>Status</th>
+                <th>Date</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${deposits.map(deposit => `
+                <tr>
+                  <td>${deposit.id}</td>
+                  <td>${deposit.userName}</td>
+                  <td>${formatCurrency(deposit.originalAmount || deposit.amount)}</td>
+                  <td>${deposit.promoCode || '-'}</td>
+                  <td>${deposit.promoBonus ? formatCurrency(deposit.promoBonus) : '-'}</td>
+                  <td>${formatCurrency(deposit.amount)}</td>
+                  <td><span class="status-badge status-${deposit.status}">${deposit.status}</span></td>
+                  <td>${formatDateTime(deposit.timestamp)}</td>
+                  <td>
+                    <div class="action-buttons">
+                      ${deposit.status === 'pending' ? `
+                        <button class="action-btn approve-btn" data-id="${deposit.id}">Approve</button>
+                        <button class="action-btn reject-btn" data-id="${deposit.id}">Reject</button>
+                      ` : ''}
+                    </div>
+                  </td>
+                </tr>
+              `).join('')}
+              ${deposits.length === 0 ? '<tr><td colspan="9" class="empty-state">No deposits yet</td></tr>' : ''}
+            </tbody>
+          </table>
+        </div>
+      `;
+      
+      document.getElementById('main-content').innerHTML = html;
+      
+      // Add event listeners
+      document.querySelectorAll('.approve-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const id = btn.dataset.id;
+          approveTransaction(id, 'deposit');
+        });
+      });
+      
+      document.querySelectorAll('.reject-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const id = btn.dataset.id;
+          rejectTransaction(id, 'deposit');
+        });
+      });
+    };
+
+    const renderWithdrawals = async () => {
+      await loadWithdrawals();
+      
+      const html = `
+        <div class="section-header">
+          <div class="section-title">Withdrawals</div>
+          <div class="section-subtitle">Manage user withdrawals</div>
+        </div>
+        
+        <div class="card">
+          <table class="table">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>User</th>
+                <th>Amount</th>
+                <th>Address</th>
+                <th>Status</th>
+                <th>Date</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${withdrawals.map(withdrawal => `
+                <tr>
+                  <td>${withdrawal.id}</td>
+                  <td>${withdrawal.userName}</td>
+                  <td>${formatCurrency(withdrawal.amount)}</td>
+                  <td>${withdrawal.address}</td>
+                  <td><span class="status-badge status-${withdrawal.status}">${withdrawal.status}</span></td>
+                  <td>${formatDateTime(withdrawal.timestamp)}</td>
+                  <td>
+                    <div class="action-buttons">
+                      ${withdrawal.status === 'pending' ? `
+                        <button class="action-btn approve-btn" data-id="${withdrawal.id}">Approve</button>
+                        <button class="action-btn reject-btn" data-id="${withdrawal.id}">Reject</button>
+                      ` : ''}
+                    </div>
+                  </td>
+                </tr>
+              `).join('')}
+              ${withdrawals.length === 0 ? '<tr><td colspan="7" class="empty-state">No withdrawals yet</td></tr>' : ''}
+            </tbody>
+          </table>
+        </div>
+      `;
+      
+      document.getElementById('main-content').innerHTML = html;
+      
+      // Add event listeners
+      document.querySelectorAll('.approve-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const id = btn.dataset.id;
+          approveTransaction(id, 'withdrawal');
+        });
+      });
+      
+      document.querySelectorAll('.reject-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const id = btn.dataset.id;
+          rejectTransaction(id, 'withdrawal');
+        });
+      });
+    };
+
+    const renderTasks = async () => {
+      await loadTasks();
+      
+      const html = `
+        <div class="section-header">
+          <div class="section-title">Tasks</div>
+          <div class="section-subtitle">Manage platform tasks</div>
+        </div>
+        
+        <div style="margin-bottom:20px">
+          <button class="btn btn-primary" id="addTaskBtn">Add Task</button>
+        </div>
+        
+        <div class="card">
+          <table class="table">
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Category</th>
+                <th>Reward</th>
+                <th>Link</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${Object.entries(tasks).map(([id, task]) => `
+                <tr>
+                  <td>${task.name}</td>
+                  <td>${task.category}</td>
+                  <td>${formatCurrency(task.amount)}</td>
+                  <td>${task.link}</td>
+                  <td>
+                    <div class="action-buttons">
+                      <button class="action-btn edit-btn" data-id="${id}">Edit</button>
+                      <button class="action-btn ban-btn" data-id="${id}">Delete</button>
+                    </div>
+                  </td>
+                </tr>
+              `).join('')}
+              ${Object.keys(tasks).length === 0 ? '<tr><td colspan="5" class="empty-state">No tasks found</td></tr>' : ''}
+            </tbody>
+          </table>
+        </div>
+      `;
+      
+      document.getElementById('main-content').innerHTML = html;
+      
+      // Add event listeners
+      document.getElementById('addTaskBtn').addEventListener('click', () => {
+        showTaskModal();
+      });
+      
+      document.querySelectorAll('.edit-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const taskId = btn.dataset.id;
+          showTaskModal(taskId);
+        });
+      });
+      
+      document.querySelectorAll('.ban-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const taskId = btn.dataset.id;
+          deleteTask(taskId);
+        });
+      });
+    };
+
+    const renderRedeemCodes = async () => {
+      await loadRedeemCodes();
+      
+      const html = `
+        <div class="section-header">
+          <div class="section-title">Redeem Codes</div>
+          <div class="section-subtitle">Manage redeem codes</div>
+        </div>
+        
+        <div style="margin-bottom:20px">
+          <button class="btn btn-primary" id="generateRedeemCodeBtn">Generate Code</button>
+        </div>
+        
+        <div class="card">
+          <table class="table">
+            <thead>
+              <tr>
+                <th>Code</th>
+                <th>Total Pool</th>
+                <th>Max Users</th>
+                <th>Used</th>
+                <th>Remaining</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${Object.entries(redeemCodes).map(([code, data]) => `
+                <tr>
+                  <td>${code}</td>
+                  <td>${formatCurrency(data.pool)}</td>
+                  <td>${data.maxUsers}</td>
+                  <td>${data.used || 0}</td>
+                  <td>${data.maxUsers - (data.used || 0)}</td>
+                  <td>
+                    <div class="action-buttons">
+                      <button class="action-btn view-btn" data-code="${code}">View</button>
+                      <button class="action-btn ban-btn" data-code="${code}">Delete</button>
+                    </div>
+                  </td>
+                </tr>
+              `).join('')}
+              ${Object.keys(redeemCodes).length === 0 ? '<tr><td colspan="6" class="empty-state">No redeem codes found</td></tr>' : ''}
+            </tbody>
+          </table>
+        </div>
+      `;
+      
+      document.getElementById('main-content').innerHTML = html;
+      
+      // Add event listeners
+      document.getElementById('generateRedeemCodeBtn').addEventListener('click', () => {
+        showRedeemCodeModal();
+      });
+      
+      document.querySelectorAll('.view-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const code = btn.dataset.code;
+          copy(code);
+        });
+      });
+      
+      document.querySelectorAll('.ban-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const code = btn.dataset.code;
+          deleteRedeemCode(code);
+        });
+      });
+    };
+
+    const renderPromoCodes = async () => {
+      await loadPromoCodes();
+      
+      const html = `
+        <div class="section-header">
+          <div class="section-title">Promo Codes</div>
+          <div class="section-subtitle">Manage promo codes</div>
+        </div>
+        
+        <div style="margin-bottom:20px">
+          <button class="btn btn-primary" id="generatePromoCodeBtn">Generate Code</button>
+        </div>
+        
+        <div class="card">
+          <table class="table">
+            <thead>
+              <tr>
+                <th>Code</th>
+                <th>Percentage</th>
+                <th>Max Users</th>
+                <th>Used</th>
+                <th>Remaining</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${Object.entries(promoCodes).map(([code, data]) => `
+                <tr>
+                  <td>${code}</td>
+                  <td>${data.percentage}%</td>
+                  <td>${data.maxUsers}</td>
+                  <td>${data.used || 0}</td>
+                  <td>${data.maxUsers - (data.used || 0)}</td>
+                  <td>
+                    <div class="action-buttons">
+                      <button class="action-btn view-btn" data-code="${code}">View</button>
+                      <button class="action-btn ban-btn" data-code="${code}">Delete</button>
+                    </div>
+                  </td>
+                </tr>
+              `).join('')}
+              ${Object.keys(promoCodes).length === 0 ? '<tr><td colspan="6" class="empty-state">No promo codes found</td></tr>' : ''}
+            </tbody>
+          </table>
+        </div>
+      `;
+      
+      document.getElementById('main-content').innerHTML = html;
+      
+      // Add event listeners
+      document.getElementById('generatePromoCodeBtn').addEventListener('click', () => {
+        showPromoCodeModal();
+      });
+      
+      document.querySelectorAll('.view-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const code = btn.dataset.code;
+          copy(code);
+        });
+      });
+      
+      document.querySelectorAll('.ban-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const code = btn.dataset.code;
+          deletePromoCode(code);
+        });
+      });
+    };
+
+    const renderMilestones = async () => {
+      const html = `
+        <div class="section-header">
+          <div class="section-title">Milestones</div>
+          <div class="section-subtitle">Manage milestone rewards</div>
+        </div>
+        
+        <div class="card">
+          <div class="form-group">
+            <label class="form-label">User ID</label>
+            <input type="text" class="form-input" id="milestoneUserId" placeholder="Enter user ID">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Amount (USDT)</label>
+            <input type="number" class="form-input" id="milestoneAmount" step="0.000001" placeholder="Enter amount">
+          </div>
+          <div class="form-group">
+            <button class="btn btn-primary" id="addMilestoneBtn">Add to Balance</button>
+            <button class="btn btn-danger" id="deductMilestoneBtn">Deduct from Balance</button>
+          </div>
+        </div>
+      `;
+      
+      document.getElementById('main-content').innerHTML = html;
+      
+      // Add event listeners
+      document.getElementById('addMilestoneBtn').addEventListener('click', () => {
+        adjustUserBalance('add');
+      });
+      
+      document.getElementById('deductMilestoneBtn').addEventListener('click', () => {
+        adjustUserBalance('deduct');
+      });
+    };
+
+    const renderAnnouncements = () => {
+      const html = `
+        <div class="section-header">
+          <div class="section-title">Announcements</div>
+          <div class="section-subtitle">Send global announcements</div>
+        </div>
+        
+        <div style="margin-bottom:20px">
+          <button class="btn btn-primary" id="sendAnnouncementBtn">Send Announcement</button>
+        </div>
+        
+        <div class="card">
+          <div class="section-title" style="margin-bottom:16px">Recent Announcements</div>
+          <div class="empty-state">
+            <div class="empty-state-icon">📢</div>
+            <div class="empty-state-title">No recent announcements</div>
+            <div class="empty-state-text">Send your first announcement to all users</div>
+          </div>
+        </div>
+      `;
+      
+      document.getElementById('main-content').innerHTML = html;
+      
+      // Add event listener
+      document.getElementById('sendAnnouncementBtn').addEventListener('click', () => {
+        showAnnouncementModal();
+      });
+    };
+
+    const renderReferrals = async () => {
+      const snapshot = await database.ref('admin/referralLog').once('value');
+      const referralLog = snapshot.val() || {};
+      
+      const html = `
+        <div class="section-header">
+          <div class="section-title">Referrals</div>
+          <div class="section-subtitle">Track referral activity</div>
+        </div>
+        
+        <div class="card">
+          <table class="table">
+            <thead>
+              <tr>
+                <th>Referrer</th>
+                <th>Referral</th>
+                <th>Reward</th>
+                <th>Date</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${Object.entries(referralLog).map(([id, referral]) => `
+                <tr>
+                  <td>${referral.referrerName} (${referral.referrerId})</td>
+                  <td>${referral.referredUserName} (${referral.referredUserId})</td>
+                  <td>${formatCurrency(referral.reward)}</td>
+                  <td>${formatDateTime(referral.timestamp)}</td>
+                </tr>
+              `).join('')}
+              ${Object.keys(referralLog).length === 0 ? '<tr><td colspan="4" class="empty-state">No referrals found</td></tr>' : ''}
+            </tbody>
+          </table>
+        </div>
+      `;
+      
+      document.getElementById('main-content').innerHTML = html;
+    };
+
+    // Modal Functions
+    const showUserDetails = async (userId) => {
+      const user = users.find(u => u.id === userId);
+      if (!user) return;
+      
+      const html = `
+        <div class="user-details">
+          <div class="detail-item">
+            <div class="detail-label">User ID</div>
+            <div class="detail-value">${user.id}</div>
+          </div>
+          <div class="detail-item">
+            <div class="detail-label">Name</div>
+            <div class="detail-value">${user.name}</div>
+          </div>
+          <div class="detail-item">
+            <div class="detail-label">Balance</div>
+            <div class="detail-value">${formatCurrency(user.usdtBalance || 0)}</div>
+          </div>
+          <div class="detail-item">
+            <div class="detail-label">Status</div>
+            <div class="detail-value">${user.banned ? 'Banned' : 'Active'}</div>
+          </div>
+          <div class="detail-item">
+            <div class="detail-label">Joined</div>
+            <div class="detail-value">${formatDateTime(user.createdAt || now())}</div>
+          </div>
+          <div class="detail-item">
+            <div class="detail-label">Last Active</div>
+            <div class="detail-value">${formatDateTime(user.lastActive || now())}</div>
+          </div>
+          <div class="detail-item">
+            <div class="detail-label">Total Ads Watched</div>
+            <div class="detail-value">${user.adStats?.lifetime || 0}</div>
+          </div>
+          <div class="detail-item">
+            <div class="detail-label">Total Referrals</div>
+            <div class="detail-value">${user.referrals || 0}</div>
+          </div>
+          <div class="detail-item">
+            <div class="detail-label">Total Commission</div>
+            <div class="detail-value">${formatCurrency(user.totalReferralCommission || 0)}</div>
+          </div>
+        </div>
+      `;
+      
+      document.getElementById('userDetailsContent').innerHTML = html;
+      document.getElementById('userDetailsModal').style.display = 'flex';
+    };
+
+    const showEditUserModal = async (userId) => {
+      const user = users.find(u => u.id === userId);
+      if (!user) return;
+      
+      document.getElementById('editUserId').value = user.id;
+      document.getElementById('editUserName').value = user.name || '';
+      document.getElementById('editUserBalance').value = user.usdtBalance || 0;
+      document.getElementById('editUserStatus').value = user.banned ? 'banned' : 'active';
+      
+      document.getElementById('editUserModal').style.display = 'flex';
+    };
+
+    const showTaskModal = async (taskId = null) => {
+      const task = taskId ? tasks[taskId] : null;
+      
+      document.getElementById('taskModalTitle').textContent = taskId ? 'Edit Task' : 'Add Task';
+      document.getElementById('taskName').value = task ? task.name : '';
+      document.getElementById('taskCategory').value = task ? task.category : 'Project';
+      document.getElementById('taskReward').value = task ? task.amount : '';
+      document.getElementById('taskLink').value = task ? task.link : '';
+      document.getElementById('taskPhoto').value = task ? task.photo : '';
+      
+      if (task && task.photo) {
+        document.getElementById('taskPhotoPreview').innerHTML = `<img src="${task.photo}" alt="Task Photo">`;
+      } else {
+        document.getElementById('taskPhotoPreview').innerHTML = '';
+      }
+      
+      // Store task ID for save function
+      document.getElementById('taskForm').dataset.taskId = taskId || '';
+      
+      document.getElementById('taskModal').style.display = 'flex';
+    };
+
+    const showRedeemCodeModal = () => {
+      document.getElementById('redeemCodePool').value = '';
+      document.getElementById('redeemCodeMaxUsers').value = '';
+      document.getElementById('redeemCodeResult').style.display = 'none';
+      
+      document.getElementById('redeemCodeModal').style.display = 'flex';
+    };
+
+    const showPromoCodeModal = () => {
+      document.getElementById('promoCodePercentage').value = '';
+      document.getElementById('promoCodeMaxUsers').value = '';
+      document.getElementById('promoCodeResult').style.display = 'none';
+      
+      document.getElementById('promoCodeModal').style.display = 'flex';
+    };
+
+    const showAnnouncementModal = () => {
+      document.getElementById('announcementMessage').value = '';
+      document.getElementById('announcementPhoto').value = '';
+      document.getElementById('announcementPhotoPreview').innerHTML = '';
+      
+      // Reset inline buttons
+      document.getElementById('inlineButtons').innerHTML = `
+        <div class="inline-button-row" style="display:flex;gap:8px;margin-bottom:8px">
+          <input type="text" class="form-input" placeholder="Button Text" data-inline="text">
+          <input type="url" class="form-input" placeholder="Button URL" data-inline="url">
+          <button type="button" class="btn btn-danger inline-button-remove">Remove</button>
+        </div>
+      `;
+      
+      document.getElementById('announcementModal').style.display = 'flex';
+    };
+
+    // Action Functions
+    const approveTransaction = async (id, type) => {
+      try {
+        const ref = database.ref(`admin/${type}s/${id}`);
+        const snapshot = await ref.once('value');
+        const transaction = snapshot.val();
+        
+        if (!transaction) {
+          showToast('Transaction not found', 'error');
+          return;
+        }
+        
+        // Update status
+        await ref.update({
+          status: 'approved',
+          approvedAt: now()
+        });
+        
+        // Update user balance if deposit
+        if (type === 'deposit') {
+          const userRef = database.ref(`users/${transaction.userId}`);
+          const userSnapshot = await userRef.once('value');
+          const userData = userSnapshot.val();
+          
+          if (userData) {
+            await userRef.update({
+              usdtBalance: (userData.usdtBalance || 0) + transaction.amount
+            });
+            
+            // Update deposit history
+            if (userData.depositHistory) {
+              const depositIndex = userData.depositHistory.findIndex(d => d.id === id);
+              if (depositIndex !== -1) {
+                userData.depositHistory[depositIndex].status = 'approved';
+                userData.depositHistory[depositIndex].balanceUpdated = true;
+                await userRef.update({
+                  depositHistory: userData.depositHistory
+                });
+              }
+            }
+          }
+          
+          // Send notification
+          sendBot(`✅ <b>Deposit Approved</b>\nAmount: ${formatCurrency(transaction.amount)} USDT\nUser: ${transaction.userName}\nID: ${id}`, transaction.userId);
+        } else if (type === 'withdrawal') {
+          // Update withdrawal history
+          const userRef = database.ref(`users/${transaction.userId}`);
+          const userSnapshot = await userRef.once('value');
+          const userData = userSnapshot.val();
+          
+          if (userData && userData.withdrawHistory) {
+            const withdrawalIndex = userData.withdrawHistory.findIndex(w => w.id === id);
+            if (withdrawalIndex !== -1) {
+              userData.withdrawHistory[withdrawalIndex].status = 'approved';
+              userData.withdrawHistory[withdrawalIndex].balanceUpdated = true;
+              await userRef.update({
+                withdrawHistory: userData.withdrawHistory
+              });
+            }
+          }
+          
+          // Send notification
+          sendBot(`✅ <b>Withdrawal Approved</b>\nAmount: ${formatCurrency(transaction.amount)} USDT\nUser: ${transaction.userName}\nID: ${id}`, transaction.userId);
+        }
+        
+        showToast(`${type === 'deposit' ? 'Deposit' : 'Withdrawal'} approved`, 'success');
+        
+        // Refresh current page
+        if (currentPage === 'dashboard') {
+          renderDashboard();
+        } else if (currentPage === 'deposits') {
+          renderDeposits();
+        } else if (currentPage === 'withdrawals') {
+          renderWithdrawals();
+        }
+      } catch (error) {
+        console.error('Error approving transaction:', error);
+        showToast('Failed to approve transaction', 'error');
+      }
+    };
+
+    const rejectTransaction = async (id, type) => {
+      try {
+        const ref = database.ref(`admin/${type}s/${id}`);
+        const snapshot = await ref.once('value');
+        const transaction = snapshot.val();
+        
+        if (!transaction) {
+          showToast('Transaction not found', 'error');
+          return;
+        }
+        
+        // Update status
+        await ref.update({
+          status: 'rejected',
+          rejectedAt: now(),
+          reason: 'Rejected by admin'
+        });
+        
+        // Update user balance if withdrawal (refund)
+        if (type === 'withdrawal') {
+          const userRef = database.ref(`users/${transaction.userId}`);
+          const userSnapshot = await userRef.once('value');
+          const userData = userSnapshot.val();
+          
+          if (userData) {
+            await userRef.update({
+              usdtBalance: (userData.usdtBalance || 0) + transaction.amount
+            });
+            
+            // Update withdrawal history
+            if (userData.withdrawHistory) {
+              const withdrawalIndex = userData.withdrawHistory.findIndex(w => w.id === id);
+              if (withdrawalIndex !== -1) {
+                userData.withdrawHistory[withdrawalIndex].status = 'rejected';
+                userData.withdrawHistory[withdrawalIndex].balanceUpdated = true;
+                await userRef.update({
+                  withdrawHistory: userData.withdrawHistory
+                });
+              }
+            }
+          }
+          
+          // Send notification
+          sendBot(`❌ <b>Withdrawal Rejected</b>\nAmount: ${formatCurrency(transaction.amount)} USDT\nUser: ${transaction.userName}\nReason: Rejected by admin\nID: ${id}`, transaction.userId);
+        } else if (type === 'deposit') {
+          // Update deposit history
+          const userRef = database.ref(`users/${transaction.userId}`);
+          const userSnapshot = await userRef.once('value');
+          const userData = userSnapshot.val();
+          
+          if (userData && userData.depositHistory) {
+            const depositIndex = userData.depositHistory.findIndex(d => d.id === id);
+            if (depositIndex !== -1) {
+              userData.depositHistory[depositIndex].status = 'rejected';
+              await userRef.update({
+                depositHistory: userData.depositHistory
+              });
+            }
+          }
+          
+          // Send notification
+          sendBot(`❌ <b>Deposit Rejected</b>\nAmount: ${formatCurrency(transaction.amount)} USDT\nUser: ${transaction.userName}\nReason: Rejected by admin\nID: ${id}`, transaction.userId);
+        }
+        
+        showToast(`${type === 'deposit' ? 'Deposit' : 'Withdrawal'} rejected`, 'success');
+        
+        // Refresh current page
+        if (currentPage === 'dashboard') {
+          renderDashboard();
+        } else if (currentPage === 'deposits') {
+          renderDeposits();
+        } else if (currentPage === 'withdrawals') {
+          renderWithdrawals();
+        }
+      } catch (error) {
+        console.error('Error rejecting transaction:', error);
+        showToast('Failed to reject transaction', 'error');
+      }
+    };
+
+    const toggleUserBan = async (userId) => {
+      try {
+        const userRef = database.ref(`users/${userId}`);
+        const snapshot = await userRef.once('value');
+        const userData = snapshot.val();
+        
+        if (!userData) {
+          showToast('User not found', 'error');
+          return;
+        }
+        
+        const isBanned = userData.banned || false;
+        
+        await userRef.update({
+          banned: !isBanned
+        });
+        
+        showToast(`User ${!isBanned ? 'banned' : 'unbanned'} successfully`, 'success');
+        
+        // Refresh users list
+        renderUsers();
+      } catch (error) {
+        console.error('Error toggling user ban:', error);
+        showToast('Failed to update user status', 'error');
+      }
+    };
+
+    const deleteTask = async (taskId) => {
+      if (!confirm('Are you sure you want to delete this task?')) return;
+      
+      try {
+        await database.ref(`tasks/${taskId}`).remove();
+        showToast('Task deleted successfully', 'success');
+        
+        // Refresh tasks list
+        renderTasks();
+      } catch (error) {
+        console.error('Error deleting task:', error);
+        showToast('Failed to delete task', 'error');
+      }
+    };
+
+    const deleteRedeemCode = async (code) => {
+      if (!confirm('Are you sure you want to delete this redeem code?')) return;
+      
+      try {
+        await database.ref(`redeemCodes/${code}`).remove();
+        showToast('Redeem code deleted successfully', 'success');
+        
+        // Refresh redeem codes list
+        renderRedeemCodes();
+      } catch (error) {
+        console.error('Error deleting redeem code:', error);
+        showToast('Failed to delete redeem code', 'error');
+      }
+    };
+
+    const deletePromoCode = async (code) => {
+      if (!confirm('Are you sure you want to delete this promo code?')) return;
+      
+      try {
+        await database.ref(`promoCodes/${code}`).remove();
+        showToast('Promo code deleted successfully', 'success');
+        
+        // Refresh promo codes list
+        renderPromoCodes();
+      } catch (error) {
+        console.error('Error deleting promo code:', error);
+        showToast('Failed to delete promo code', 'error');
+      }
+    };
+
+    const adjustUserBalance = async (action) => {
+      const userId = document.getElementById('milestoneUserId').value.trim();
+      const amount = parseFloat(document.getElementById('milestoneAmount').value);
+      
+      if (!userId) {
+        showToast('Please enter a user ID', 'error');
+        return;
+      }
+      
+      if (isNaN(amount) || amount <= 0) {
+        showToast('Please enter a valid amount', 'error');
+        return;
+      }
+      
+      try {
+        const userRef = database.ref(`users/${userId}`);
+        const snapshot = await userRef.once('value');
+        const userData = snapshot.val();
+        
+        if (!userData) {
+          showToast('User not found', 'error');
+          return;
+        }
+        
+        const currentBalance = userData.usdtBalance || 0;
+        const newBalance = action === 'add' ? currentBalance + amount : currentBalance - amount;
+        
+        if (newBalance < 0) {
+          showToast('Insufficient balance for deduction', 'error');
+          return;
+        }
+        
+        await userRef.update({
+          usdtBalance: newBalance
+        });
+        
+        showToast(`User balance ${action === 'add' ? 'increased' : 'decreased'} by ${formatCurrency(amount)}`, 'success');
+        
+        // Clear form
+        document.getElementById('milestoneUserId').value = '';
+        document.getElementById('milestoneAmount').value = '';
+      } catch (error) {
+        console.error('Error adjusting user balance:', error);
+        showToast('Failed to adjust user balance', 'error');
+      }
+    };
+
+    // Event Listeners
+    document.addEventListener('DOMContentLoaded', () => {
+      // Sidebar navigation
+      document.querySelectorAll('.sidebar-item').forEach(item => {
+        item.addEventListener('click', () => {
+          // Update active state
+          document.querySelectorAll('.sidebar-item').forEach(i => i.classList.remove('active'));
+          item.classList.add('active');
+          
+          // Load page
+          currentPage = item.dataset.page;
+          
+          switch (currentPage) {
+            case 'dashboard':
+              renderDashboard();
+              break;
+            case 'users':
+              renderUsers();
+              break;
+            case 'deposits':
+              renderDeposits();
+              break;
+            case 'withdrawals':
+              renderWithdrawals();
+              break;
+            case 'tasks':
+              renderTasks();
+              break;
+            case 'redeem-codes':
+              renderRedeemCodes();
+              break;
+            case 'promo-codes':
+              renderPromoCodes();
+              break;
+            case 'milestones':
+              renderMilestones();
+              break;
+            case 'announcements':
+              renderAnnouncements();
+              break;
+            case 'referrals':
+              renderReferrals();
+              break;
+          }
+        });
+      });
+      
+      // Modal close buttons
+      document.getElementById('closeUserModal').addEventListener('click', () => {
+        document.getElementById('userDetailsModal').style.display = 'none';
+      });
+      
+      document.getElementById('closeEditUserModal').addEventListener('click', () => {
+        document.getElementById('editUserModal').style.display = 'none';
+      });
+      
+      document.getElementById('closeTaskModal').addEventListener('click', () => {
+        document.getElementById('taskModal').style.display = 'none';
+      });
+      
+      document.getElementById('closeRedeemCodeModal').addEventListener('click', () => {
+        document.getElementById('redeemCodeModal').style.display = 'none';
+      });
+      
+      document.getElementById('closePromoCodeModal').addEventListener('click', () => {
+        document.getElementById('promoCodeModal').style.display = 'none';
+      });
+      
+      document.getElementById('closeAnnouncementModal').addEventListener('click', () => {
+        document.getElementById('announcementModal').style.display = 'none';
+      });
+      
+      // Save user changes
+      document.getElementById('saveUserChanges').addEventListener('click', async () => {
+        const userId = document.getElementById('editUserId').value;
+        const userName = document.getElementById('editUserName').value;
+        const userBalance = parseFloat(document.getElementById('editUserBalance').value);
+        const userStatus = document.getElementById('editUserStatus').value;
+        
+        try {
+          await database.ref(`users/${userId}`).update({
+            name: userName,
+            usdtBalance: userBalance,
+            banned: userStatus === 'banned'
+          });
+          
+          showToast('User updated successfully', 'success');
+          document.getElementById('editUserModal').style.display = 'none';
+          
+          // Refresh users list
+          renderUsers();
+        } catch (error) {
+          console.error('Error updating user:', error);
+          showToast('Failed to update user', 'error');
+        }
+      });
+      
+      // Save task
+      document.getElementById('saveTask').addEventListener('click', async () => {
+        const taskId = document.getElementById('taskForm').dataset.taskId;
+        const taskName = document.getElementById('taskName').value;
+        const taskCategory = document.getElementById('taskCategory').value;
+        const taskReward = parseFloat(document.getElementById('taskReward').value);
+        const taskLink = document.getElementById('taskLink').value;
+        const taskPhoto = document.getElementById('taskPhoto').value;
+        
+        if (!taskName || !taskLink || isNaN(taskReward)) {
+          showToast('Please fill all required fields', 'error');
+          return;
+        }
+        
+        try {
+          const taskData = {
+            name: taskName,
+            category: taskCategory,
+            amount: taskReward,
+            link: taskLink,
+            photo: taskPhoto
+          };
+          
+          if (taskId) {
+            // Update existing task
+            await database.ref(`tasks/${taskId}`).update(taskData);
+            showToast('Task updated successfully', 'success');
+          } else {
+            // Add new task
+            await database.ref('tasks').push(taskData);
+            showToast('Task added successfully', 'success');
+          }
+          
+          document.getElementById('taskModal').style.display = 'none';
+          
+          // Refresh tasks list
+          renderTasks();
+        } catch (error) {
+          console.error('Error saving task:', error);
+          showToast('Failed to save task', 'error');
+        }
+      });
+      
+      // Generate redeem code
+      document.getElementById('generateRedeemCode').addEventListener('click', async () => {
+        const pool = parseFloat(document.getElementById('redeemCodePool').value);
+        const maxUsers = parseInt(document.getElementById('redeemCodeMaxUsers').value);
+        
+        if (isNaN(pool) || isNaN(maxUsers) || pool <= 0 || maxUsers <= 0) {
+          showToast('Please enter valid values', 'error');
+          return;
+        }
+        
+        // Generate random code
+        const code = Math.random().toString(36).substring(2, 10).toUpperCase();
+        
+        try {
+          await database.ref(`redeemCodes/${code}`).set({
+            pool,
+            maxUsers,
+            used: 0
+          });
+          
+          document.getElementById('redeemCodeValue').value = code;
+          document.getElementById('redeemCodeResult').style.display = 'block';
+          
+          showToast('Redeem code generated successfully', 'success');
+        } catch (error) {
+          console.error('Error generating redeem code:', error);
+          showToast('Failed to generate redeem code', 'error');
+        }
+      });
+      
+      // Copy redeem code
+      document.getElementById('copyRedeemCode').addEventListener('click', () => {
+        const code = document.getElementById('redeemCodeValue').value;
+        copy(code);
+      });
+      
+      // Generate promo code
+      document.getElementById('generatePromoCode').addEventListener('click', async () => {
+        const percentage = parseInt(document.getElementById('promoCodePercentage').value);
+        const maxUsers = parseInt(document.getElementById('promoCodeMaxUsers').value);
+        
+        if (isNaN(percentage) || isNaN(maxUsers) || percentage <= 0 || percentage > 100 || maxUsers <= 0) {
+          showToast('Please enter valid values', 'error');
+          return;
+        }
+        
+        // Generate random code
+        const code = Math.random().toString(36).substring(2, 10).toUpperCase();
+        
+        try {
+          await database.ref(`promoCodes/${code}`).set({
+            percentage,
+            maxUsers,
+            used: 0
+          });
+          
+          document.getElementById('promoCodeValue').value = code;
+          document.getElementById('promoCodeResult').style.display = 'block';
+          
+          showToast('Promo code generated successfully', 'success');
+        } catch (error) {
+          console.error('Error generating promo code:', error);
+          showToast('Failed to generate promo code', 'error');
+        }
+      });
+      
+      // Copy promo code
+      document.getElementById('copyPromoCode').addEventListener('click', () => {
+        const code = document.getElementById('promoCodeValue').value;
+        copy(code);
+      });
+      
+      // Add inline button
+      document.getElementById('addInlineButton').addEventListener('click', () => {
+        const buttonRow = document.createElement('div');
+        buttonRow.className = 'inline-button-row';
+        buttonRow.style.display = 'flex';
+        buttonRow.style.gap = '8px';
+        buttonRow.style.marginBottom = '8px';
+        
+        buttonRow.innerHTML = `
+          <input type="text" class="form-input" placeholder="Button Text" data-inline="text">
+          <input type="url" class="form-input" placeholder="Button URL" data-inline="url">
+          <button type="button" class="btn btn-danger inline-button-remove">Remove</button>
+        `;
+        
+        document.getElementById('inlineButtons').appendChild(buttonRow);
+        
+        // Add event listener to remove button
+        buttonRow.querySelector('.inline-button-remove').addEventListener('click', () => {
+          buttonRow.remove();
+        });
+      });
+      
+      // Send announcement
+      document.getElementById('sendAnnouncement').addEventListener('click', async () => {
+        const message = document.getElementById('announcementMessage').value;
+        const photo = document.getElementById('announcementPhoto').value;
+        
+        if (!message) {
+          showToast('Please enter a message', 'error');
+          return;
+        }
+        
+        // Collect inline buttons
+        const inlineButtons = [];
+        document.querySelectorAll('.inline-button-row').forEach(row => {
+          const text = row.querySelector('[data-inline="text"]').value;
+          const url = row.querySelector('[data-inline="url"]').value;
+          
+          if (text && url) {
+            inlineButtons.push({ text, url });
+          }
+        });
+        
+        try {
+          // Get all users
+          const usersSnapshot = await database.ref('users').once('value');
+          const users = usersSnapshot.val() || {};
+          
+          // Send announcement to all users
+          for (const [userId, userData] of Object.entries(users)) {
+            await sendBot(message, userId, inlineButtons);
+          }
+          
+          showToast('Announcement sent successfully', 'success');
+          document.getElementById('announcementModal').style.display = 'none';
+        } catch (error) {
+          console.error('Error sending announcement:', error);
+          showToast('Failed to send announcement', 'error');
+        }
+      });
+      
+      // File upload handlers
+      document.getElementById('taskPhotoUpload').addEventListener('click', () => {
+        document.getElementById('taskPhotoFile').click();
+      });
+      
+      document.getElementById('taskPhotoFile').addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (file) {
+          const reader = new FileReader();
+          reader.onload = (e) => {
+            document.getElementById('taskPhotoPreview').innerHTML = `<img src="${e.target.result}" alt="Task Photo">`;
+            // In a real app, you would upload this to a storage service and get the URL
+            // For now, we'll use a data URL
+            document.getElementById('taskPhoto').value = e.target.result;
+          };
+          reader.readAsDataURL(file);
+        }
+      });
+      
+      document.getElementById('announcementPhotoUpload').addEventListener('click', () => {
+        document.getElementById('announcementPhotoFile').click();
+      });
+      
+      document.getElementById('announcementPhotoFile').addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (file) {
+          const reader = new FileReader();
+          reader.onload = (e) => {
+            document.getElementById('announcementPhotoPreview').innerHTML = `<img src="${e.target.result}" alt="Announcement Photo">`;
+            // In a real app, you would upload this to a storage service and get the URL
+            // For now, we'll use a data URL
+            document.getElementById('announcementPhoto').value = e.target.result;
+          };
+          reader.readAsDataURL(file);
+        }
+      });
+      
+      // Initialize with dashboard
+      renderDashboard();
+      
+      // Show app
+      document.getElementById('app').style.display = 'block';
+    });
+  </script>
+</body>
+</html>
